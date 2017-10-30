@@ -5,6 +5,8 @@ date:   2017-10-30 18:58:12 +1000
 categories: ml pytorch
 ---
 
+{% include mathjax.html %}
+
 ### Introduction
 
 Mixture models allow complex multimodal distributions to be described by
@@ -16,14 +18,14 @@ Gaussians to some unlabelled data.
 
 ###  Why PyTorch?
 
-[PyTorch][pytorch] is the slick new Deep Learning framework from Facebook.
+[PyTorch][pytorch] is the slick new deep learning framework from Facebook.
 I have chosen it for this project for a few reasons:
 - Powerful linear algebra functions as part of the `torch.Tensor` API.
-- "Device agnostic" development, allowing code to be run on both CPU and GPU.
+- Device agnostic development. i.e. the same code runs on CPU and GPU.
 - Automatic differentiation! A step of EM is fully differentiable. In a later post
 I hope to exploit this fact to explore EM in combination with a neural net.
-For now however, the `autograd` package will just quietly do its thing in the background
-with no significant overhead.
+But for now, the `autograd` package will just quietly do its thing in the background
+with minimal overhead.
 
 ### The Gaussian Mixture Model
 
@@ -50,7 +52,7 @@ Step 2. and 3. are performed iteratively until the model converges. Convergence
 is reached when the total likelihood of the data under the model stops
 decreasing.
 
-### A synthetic dataset.
+### Synthetic Data
 
 In order to quickly test my implementation, I created a synthetic dataset of
 points sampled from three 2-dimensional gaussians, as follows:
@@ -73,7 +75,7 @@ def sample(mu, var, nb_samples=500):
 ![Synthetic]({{ "/assets/images/synthetic.png" }})
 
 
-### Initialising the parameters
+### Initialising the Parameters
 
 One recommended approach to initialising GMM is to use the centroids
 from a precomputed k-means model. For the sake of simplicity, I just randomly
@@ -81,23 +83,24 @@ select `K` points from my dataset to act as initial means. I use a fixed initial
 and equal priors.
 
 {% highlight python %}
-def initialize(data, k, var=1):
+def initialize(data, K, var=1):
   """
-  :param data: torch.Variable(examples, features)
-  :param k: number of gaussians
+  :param data: design matrix (examples, features)
+  :param K: number of gaussians
   :param var: initial variance
   """
   # choose k points from data to initialize means
-  m = data.size(0)
+  M = data.size(0) # nb. of training examples
   idxs = Variable(torch.from_numpy(
-      np.random.choice(m, k, replace=False)))
+      np.random.choice(M, K, replace=False)))
   mu = data[idxs]
 
   # fixed variance
-  var = Variable(torch.Tensor(k, d).fill_(var))
+  N = data.size(1) # nb. of features
+  var = Variable(torch.Tensor(K, N).fill_(var))
 
   # equal priors
-  pi = Variable(torch.Tensor(k).fill_(1)) / k
+  pi = Variable(torch.Tensor(K).fill_(1)) / K
 
   return mu, var, pi
 {% endhighlight %}
@@ -107,6 +110,10 @@ def initialize(data, k, var=1):
 
 Step 2. of the EM algorithm requires us to compute the relative likelihood of
 each data point under each component. The p.d.f of the multivariate gaussian is:
+
+$$
+   p(x;\mu, \sigma)=\frac{1}{\sqrt{2\pi|\Sigma|} }\exp\left(-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu)\right)
+$$
 
 
 
