@@ -30,12 +30,12 @@ with minimal overhead.
 ### The Gaussian Mixture Model
 
 If you have worked with [k-means clustering][kmeans] before mixture models will
-feel very familiar to you. Like k-means we start with the assumption
-that our data is comprised of `K` subpopulations. Given a set of data points with
-`N` features, our goal is to learn the parameters of the `K` mixture components that
-maximises the likelihood of the observed data. Unlike k-means, we do not strictly
-assign each point to a component. Instead, each point has an associated likelihood
-or probability under each of the `K` component gaussians.
+feel very familiar. Like k-means we start with the assumption
+that our data is comprised of `K` subpopulations. Given some observed data, our
+goal is to learn component parameters that maximise the likelihood of the
+data under the mixture distribution. Unlike k-means where we assign each data point
+to a cluster, each observation in a mixture model has a likelihood under every
+component.
 
 The `K` component gaussians are each parameterised by a mean `mu`, covariance
 matrix `sigma` (we will assume a diagonal covariance matrix for simplicity),
@@ -72,6 +72,7 @@ def sample(mu, var, nb_samples=500):
     return torch.cat(out, dim=0)
 {% endhighlight %}
 
+
 ![Synthetic]({{ "/assets/images/synthetic.png" }})
 
 
@@ -79,8 +80,8 @@ def sample(mu, var, nb_samples=500):
 
 One recommended approach to initialising GMM is to use the centroids
 from a precomputed k-means model. For the sake of simplicity, I just randomly
-select `K` points from my dataset to act as initial means. I use a fixed initial variance
-and equal priors.
+select `K` points from my dataset to act as initial means. I use a fixed initial
+variance and equal priors.
 
 {% highlight python %}
 def initialize(data, K, var=1):
@@ -115,6 +116,7 @@ $$
    p(x;\mu, \sigma)=\frac{1}{\sqrt{2\pi|\Sigma|} }\exp\left(-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu)\right)
 $$
 
+This term is referred to as the "likelihood".
 
 
 [pytorch]: https://pytorch.org
