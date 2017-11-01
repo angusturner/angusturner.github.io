@@ -250,8 +250,9 @@ def get_parameters(X, gamma, eps=1e-6):
 
 ### Results
 
-Apart from some simple training logic, that is the bulk of the algorithm! Fitting
-the synthetic dataset I presented earlier:
+Apart from some simple training logic, that is the bulk of the algorithm! Here is
+a visualisation of EM fitting three components to the synthetic data I generated
+earlier:
 
 ![1]({{ "/assets/images/fig_1.png" }})
 
