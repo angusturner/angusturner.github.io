@@ -28,7 +28,7 @@ with backpropagation. More on this later.
 
 ### The Gaussian Mixture Model
 
-A gaussian mixture model (GMM) with $$ K $$ components takes the form:
+A gaussian mixture model (GMM) with $$ K $$ components takes the form<sup>1</sup>:
 
 $$
   p(x) = \sum_{k=1}^{K}p(x|z=k)p(z=k)
@@ -49,7 +49,7 @@ maximisation (EM).
 The basic EM algorithm has three steps:
 1. Randomly initialise the parameters of the component distributions.
 2. Estimate the probability of each data point under the component parameters.
-3. Recalculate the parameters based on the estimated assignment probabilities. Repeat Step 2.
+3. Recalculate the parameters based on the estimated probabilities. Repeat Step 2.
 
 Convergence is reached when the total likelihood of the data under the model stops
 decreasing.
@@ -254,11 +254,19 @@ Apart from some simple training logic, that is the bulk of the algorithm! Here i
 a visualisation of EM fitting three components to the synthetic data I generated
 earlier:
 
-![1]({{ "/assets/images/fig_1.png" }})
+<video loop autoplay preload='auto' height='740px' width='740px' poster="/assets/images/fig_8.png">
+  <source src='/assets/video/output.webm' type='video/webm; codecs="vp9, vorbis"'>
+</video>
 
-![1]({{ "/assets/images/fig_5.png" }})
 
-![1]({{ "/assets/images/fig_8.png" }})
+### References and Further Reading
+
+For a more rigorous treatment of the EM algorithm see [1].
+
+[1] Bishop, C. (2006). Pattern Recognition and Machine Learning. Ch9
+
+
+### Get the Code
 
 The Jupyter Notebook for this project is available on my Github.
 
