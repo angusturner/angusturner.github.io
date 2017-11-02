@@ -1,8 +1,8 @@
 ---
 layout: post
 title:  "Gaussian Mixture Models in PyTorch"
-date:   2017-10-30 18:58:12 +1000
-categories: ml pytorch
+date:   2017-11-03 18:58:12 +1000
+categories: generative_models
 ---
 
 {% include mathjax.html %}
@@ -10,25 +10,40 @@ categories: ml pytorch
 ### Introduction
 
 Mixture models allow rich probability distributions to be represented as a combination
-of simpler "component" distributions. They can be applied to a variety of statistical
-learning problems such as unsupervised clustering, classification and instance segmentation.
-It is an interesting class of models to study because it introduces the concepts of
-latent variables and density estimation in an intuitive way. It is also a precursor
-to more sophisticated generative models such as VAEs and GANs.
+of simpler "component" distributions. For example, consider the mixture of 1-dimensional
+gaussians in the image below:
+
+![mixture]({{ "/assets/images/mixture.png" }})
+
+While the representational capacity of a single gaussian is obviously limited,
+a mixture is capable of approximating any distribution with an accuracy proportional
+to the number of components<sup>2</sup>.
+
+In practice mixture models are used for a variety of statistical learning problems
+such as classification, image segmentation and clustering. My own interest
+stems from their role as part of an increasingly diverse family of
+generative models. Generative models are those which explicitly
+model the data generation process. Though it is not always the goal, this permits
+new data points to be sampled from the same distribution as the training data. In this
+context mixture models are an important precursor to VAEs and
+GANs (topics for a later post).
+
+In this blog I will offer a brief introduction to the gaussian mixture model and
+implement it in PyTorch. The full code will be available on my [github].
 
 ###  Why PyTorch?
 
-[PyTorch][pytorch] is the slick new deep learning framework from Facebook.
-I have chosen it for this project for a few reasons:
-- Powerful linear algebra functions as part of the `torch.Tensor` API.
-- Device agnostic development. i.e. the same code runs on CPU and GPU.
-- Automatic differentiation! Instead of EM, we could also fit the parameters
-with backpropagation. More on this later.
-
+PyTorch is the slick new deep learning framework from Facebook. I have
+been using it in my work at [Popgun][popgun] for roughly 7 months now, and it has been a joy
+to work with. Although it is primarily geared towards deep gradient based models,
+it basically excels at any task with highly parallelizable matrix operations.
+One of the key benefits is the ability to write "device agnostic" code. i.e the same
+code can be run on both CPU and GPU with minimal adjustment. This makes it well
+suited to the GMM.
 
 ### The Gaussian Mixture Model
 
-A gaussian mixture model (GMM) with $$ K $$ components takes the form<sup>1</sup>:
+A gaussian mixture model with $$ K $$ components takes the form<sup>1</sup>:
 
 $$
   p(x) = \sum_{k=1}^{K}p(x|z=k)p(z=k)
@@ -197,16 +212,14 @@ The resulting values are sometimes referred to as the "membership weights",
 and represent the extent to which component the component identity $$ z $$ can
 explain the observation $$ x $$.
 
-
 {% highlight python %}
-def get_posteriors(P, pi, eps=1e-6):
-  """
-  :param P: likelihoods p(x|z) under each gaussian (K, examples)
-  :param pi: priors p(z) (must sum to 1) (K)
-  :return: posterior p(z|x): (K, examples)
-  """
-  P_sum = torch.sum(P, dim=0, keepdim=True)
-  return (P / (P_sum+eps)) * pi.unsqueeze(1)
+def get_posteriors(P, eps=1e-6):
+    """
+    :param P: the relative likelihood of each data point under each gaussian (K, examples)
+    :return: p(z|x): (K, examples)
+    """
+    P_sum = torch.sum(P, dim=0, keepdim=True)
+    return (P / (P_sum+eps))
 {% endhighlight %}
 
 ### Parameter Update
@@ -259,16 +272,22 @@ earlier:
 </video>
 
 
-### References and Further Reading
+### Thanks for Reading!
 
-For a more rigorous treatment of the EM algorithm see [1].
+If you found this post interesting or informative, have questions
+or would like to offer feedback or corrections feel free to get in touch at my email
+or on twitter. Thanks!
+
+### References
+
+For a more rigorous treatment of the EM algorithm see [1]. For a gentle introduction
+to probability theory and its context in the field
 
 [1] Bishop, C. (2006). Pattern Recognition and Machine Learning. Ch9
+[2] Bengio, Y., Goodfellow, I. (2016). Deep Learning.
 
-
-### Get the Code
-
-The Jupyter Notebook for this project is available on my Github.
 
 [pytorch]: https://pytorch.org
 [kmeans]: https://en.wikipedia.org/wiki/K-means_clustering
+[github]: https://github.com/angusturner
+[popgun]: http://popgun.ai/
