@@ -280,11 +280,10 @@ or on twitter. Thanks!
 
 ### References
 
-For a more rigorous treatment of the EM algorithm see [1]. For a gentle introduction
-to probability theory and its context in the field
+For a more rigorous treatment of the EM algorithm see [1].
 
-[1] Bishop, C. (2006). Pattern Recognition and Machine Learning. Ch9
-[2] Bengio, Y., Goodfellow, I. (2016). Deep Learning.
+1. Bishop, C. (2006). Pattern Recognition and Machine Learning. Ch9.
+2. Bengio, Y., Goodfellow, I. (2016). Deep Learning.
 
 
 [pytorch]: https://pytorch.org
