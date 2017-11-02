@@ -5,7 +5,6 @@ date:   2017-11-03 18:58:12 +1000
 categories: generative_models
 ---
 
-{% include analytics.html %}
 {% include mathjax.html %}
 
 ### Introduction
