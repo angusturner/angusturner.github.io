@@ -306,7 +306,7 @@ For a more rigorous treatment of the EM algorithm see [1].
 
 [pytorch]: https://pytorch.org
 [kmeans]: https://en.wikipedia.org/wiki/K-means_clustering
-[github]: https://github.com/angusturner
+[github]: https://github.com/angusturner/generative_models/
 [popgun]: http://popgun.ai/
 [variational autoencoders]: https://arxiv.org/abs/1312.6114
 [distributions]: https://pytorch.org/docs/stable/distributions.html
