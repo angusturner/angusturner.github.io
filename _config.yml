@@ -30,6 +30,9 @@ plugins:
 # google analytics
 google_analytics: UA-109153055-1
 
+# disqus support
+comments: true
+
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
 # to override the default setting.

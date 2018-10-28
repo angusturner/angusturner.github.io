@@ -3,9 +3,12 @@ layout: post
 title:  "Gaussian Mixture Models in PyTorch"
 date:   2017-11-03 18:58:12 +1000
 categories: generative_models
+comments: true
 ---
 
 {% include mathjax.html %}
+
+#### Update: Revised for PyTorch 0.4 on Oct 28, 2018
 
 ### Introduction
 
@@ -21,12 +24,10 @@ to the number of components<sup>2</sup>.
 
 In practice mixture models are used for a variety of statistical learning problems
 such as classification, image segmentation and clustering. My own interest
-stems from their role as part of an increasingly diverse family of
-generative models. Generative models are those which explicitly
-model the data generation process. Though it is not always the goal, this permits
-new data points to be sampled from the same distribution as the training data. In this
-context mixture models are an important precursor to VAEs and
-GANs (topics for a later post).
+stems from their role as an important precursor to more advanced generative models.
+For example, [variational autoencoders] provide a framework for learning mixture
+distributions with an infinite number of components and can model complex high
+dimensional data such as images.
 
 In this blog I will offer a brief introduction to the gaussian mixture model and
 implement it in PyTorch. The full code will be available on my [github].
@@ -120,10 +121,8 @@ $$
    p(x;\mu, \sigma)=\frac{1}{\sqrt{2\pi|\Sigma|} }\exp\left(-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu)\right)
 $$
 
-
 By only considering diagonal covariance matrices $$ I\sigma^2 = \Sigma $$ ,
-we can deal with the variances directly. This greatly simplifies our computation.
-Firstly, we can exploit the fact that the determinant is equal to the product of the trace.
+we can greatly simplify the computation (at the loss of some flexibility):
 
 $$
   |\Sigma| = \prod_{j=1}^{N}\sigma_{j}^{2}
@@ -141,26 +140,33 @@ $$
   -\frac{1}{2}\left(\left(x-\mu\right)\odot\left(x-\mu\right)\right)^{T}\sigma^{-2}
 $$
 
-where $$ \odot $$ represents elementwise multiplication and $$ \sigma^{-2} $$
+where $$ \odot $$ represents element-wise multiplication and $$ \sigma^{-2} $$
 is our vector of inverse variances.
+
+It is worth taking a minute to reflect on the form of the exponent in the last
+equation. Because there is no linear dependence between the dimensions,
+the computation reduces to calculating a gaussian p.d.f for each dimension
+independently and then taking their product (or sum in the log domain).
 
 ### Calculating Likelihoods
 
-In practice, likelihoods are often computed in the log domain for numerical stability.
-This is particularly important in high dimensions where there is a risk of
-numerical underflow. We could use the `torch.Distributions.Normal` class for this,
-however I prefer to use the following functional implementation:
+In high dimensions the likelihood calculation can suffer from numerical
+underflow. It is therefore typical to work with the log p.d.f instead (i.e.
+the exponent we derived above, plus the constant normalisation term). Note that we
+could use the in-built PyTorch [distributions] package for this, however for transparency
+here is my own functional implementation:
 
 {% highlight python %}
 log_norm_constant = -0.5 * np.log(2 * np.pi)
 
 def log_gaussian(x, mean=0, logvar=0.):
   """
-  Returns the feature-wise density of x under the supplied gaussian.
+  Returns the density of x under the supplied gaussian. Defaults to
+  standard gaussian N(0, I)
   :param x: (*) torch.Tensor
   :param mean: float or torch.FloatTensor with dimensions (*)
   :param logvar: float or torch.FloatTensor with dimensions (*)
-  :return: (*) log density
+  :return: (*) elementwise log density
   """
   if type(logvar) == 'float':
       logvar = x.new(1).fill_(logvar)
@@ -205,7 +211,7 @@ def get_likelihoods(X, mu, logvar, log=True):
 
 ### Computing Posteriors
 
-In order to recompute the parameters, we need to apply Bayes rule to likelihoods,
+In order to recompute the parameters we apply Bayes rule to likelihoods
 as follows:
 
 $$
@@ -213,7 +219,7 @@ $$
 $$
 
 The resulting values are sometimes referred to as the "membership weights",
-and represent the extent to which component the component identity $$ z $$ can
+as they $$ z $$ can
 explain the observation $$ x $$. Since our likelihoods are in the log-domain,
 we exploit the logsumexp trick for stability.
 
@@ -285,7 +291,7 @@ earlier:
 
 If you found this post interesting or informative, have questions
 or would like to offer feedback or corrections feel free to get in touch at my email
-or on twitter. Thanks!
+or on [twitter]. Also stay tuned for my upcoming post on Variational Autoencoders!
 
 ### References
 
@@ -294,8 +300,14 @@ For a more rigorous treatment of the EM algorithm see [1].
 1. Bishop, C. (2006). Pattern Recognition and Machine Learning. Ch9.
 2. Bengio, Y., Goodfellow, I. (2016). Deep Learning.
 
+{% if page.comments %}
+{% include disqus.html %}
+{% endif %}
 
 [pytorch]: https://pytorch.org
 [kmeans]: https://en.wikipedia.org/wiki/K-means_clustering
 [github]: https://github.com/angusturner
 [popgun]: http://popgun.ai/
+[variational autoencoders]: https://arxiv.org/abs/1312.6114
+[distributions]: https://pytorch.org/docs/stable/distributions.html
+[twitter]: https://twitter.com/AngusTurner9
