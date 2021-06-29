@@ -1,0 +1,40 @@
+<style>
+    .citation {
+        display: flex;
+        justify-content: flex-start;
+        padding-bottom: 15px;
+    }
+    .citation-number {
+        min-width: 25px;
+        padding-right: 10px;
+        height: 100%;
+        text-align: right;
+    }
+    .citation-info {
+        display: inline-flex;
+        flex-flow: column wrap;
+    }
+    .citation-title {
+        width: 100%;
+        font-weight: bold;
+    }
+    .citation-meta {
+        width: 100%;
+    }
+    a.cite-link {
+        color: inherit;
+    }
+</style>
+
+<div class="citation" id="citation-{{ include.no }}">
+    <div class="citation-number">{{ include.no }}.</div>
+    <div class="citation-info">
+        <div class="citation-title">
+            <a href="{{ include.link }}" class="cite-link">{{ include.title }}</a>
+        </div>
+        <div class="citation-meta">
+            <span class="citation-authors">{{ include.authors }}.</span>
+            <span class="citation-year">{{ include.year }}</span>
+        </div>
+    </div>
+</div>

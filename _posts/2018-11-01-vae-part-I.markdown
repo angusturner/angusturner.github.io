@@ -1,7 +1,7 @@
 ---
 layout: post
-title:  "Variational Autoencoders - Part I The Fundamentals"
-date:   2018-11-01 18:58:12 +1000
+title:  "Diffusion Probabilistic Models - Part I"
+date:   2021-06-29
 categories: generative_models
 comments: false
 ---
@@ -10,34 +10,78 @@ comments: false
 
 ### Introduction
 
-### The Infinite Mixture Distribution
+Recently I have been studying a class of generative models called diffusion models. This line of research
+grabbed my attention with the release of "Denoising Diffusion Probabilistic Models" (Ho et al, 2020), which showed
+that a CNN trained with a variational lower bound could produce competitive results to a GAN on image modelling. 
+As an audio researcher, I was parcticularly excited to these insights translated to audio modelling with the release
+of "DiffWave: A Versatile Diffusion Model for Audio Synthesis" (Kong et al, 2020). As well as providing a competitive neural
+vocoder, Kong showed that the same model could perform zero-shot denoising and unconditional audio modelling (link to results).
 
-We will start our exploration by considering the following generative model
+What is fascinating about these models, is that they have deep connections to variational auto-encoding (ref), score-based generative modelling (ref), and 
+stochastic differential equations (ref). In this series of blog posts I want to untangle the theory of Ho's model from the perpspective
+of variational inference. This is the perspective I am most comfortable with, and I hope that I can build up the theory in an accessible and
+intuitive way. Ideally, you will at least be familiar with variational auto-encoders. However I will do a quick refresher.
+...
+
+
+### A Refresher on Variational Autoencoders
+
+We consider the following generative model,
 
 $$
   p(x) = \int_{z}p(x|z)p(z)
 $$
 
 where $$ p(z) $$ is a continuous distribution and the form of $$ p(x|z) $$ is dependent
-on the data we would like to model. Lets consider the case where $$ p(z) = \mathcal{N}(0, I) $$,
-and $$ x $$ is some binary random variable $$ p(x|z) = \mathcal{B}(1, \alpha) $$
+on the data we would like to model. Often a simple prior like $$ p(z) = \mathcal{N}(0, I) $$ is chosen for 
+analytic tractability.
 
 If you have studied mixture distributions before (see my [previous post] for an
 introduction), the form of this equation will look quite familiar. This is because
-we have just defined an infinite mixture of Bernoulli distributions! This can be
-realised by noticing that for every value $$ z $$ of our continuous prior have a
+we have just defined an infinite mixture distribution! This can be
+realised by noticing that for every value $$ z $$ of our continuous prior we have a
 separate conditional distribution $$ x ~ p(x|z) $$.
 
-For completeness, the graphical model of this equation is:
+We could try to learn this model directly by maximising:
 
-![Generative]({{ "/assets/images/generative.png" }})
+...
 
-### Monte-Carlo Integration
+However, this approach suffers from high-variance and does not scale to high dimensions. To alleviate this,
+we introduce a learned proposal distribution $$ q(z|x) $$, which allows the model to focus on high-probability
+regions of the latent space. A typical derivation for this model is as follows:
+
+...
+
+
+For completeness, we have the following graphical model:
+
+![VAE]({{ "/assets/images/vae.png" }})
+
+
+The key insight of Kingma and Welling was to introduce a low-variance gradient estimator for this model,
+by way of the reparameterization trick. Plenty has been written on this already, so I will direct the interested
+reader to (...).
+
+
+### Hierarchical Variational Autoencoders
+
+
+
+### DDPM as a Restricted Class of Hierarchical VAE
+
+
 
 
 ### References
 
-1.
+{% include citation.html
+    no="1"
+    authors="Aaron van den Oord, Sander Dieleman, 
+    Heiga Zen, Karen Simonyan, Oriol Vinyals, Alex Graves, Nal Kalchbrenner, Andrew Senior, and Koray Kavukcuoglu"
+    title="Wavenet: A generative model for raw audio"
+    year="2016"
+    link="https://arxiv.org/abs/1609.03499v2"
+%}
 
 {% if page.comments %}
 {% include disqus.html %}
