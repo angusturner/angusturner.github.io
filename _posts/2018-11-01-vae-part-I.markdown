@@ -7,6 +7,7 @@ comments: false
 ---
 
 {% include mathjax.html %}
+{% include styles.html %}
 
 ### Introduction
 
@@ -24,30 +25,28 @@ intuitive way. Ideally, you will at least be familiar with variational auto-enco
 ...
 
 
-### A Refresher on Variational Autoencoders
+### Variational Autoencoders - A Quick Refresher
 
-We consider the following generative model,
+Consider the following generative model,
 
 $$
-  p(x) = \int_{z}p(x|z)p(z)
-$$
+  p(x) = \int_{z}p_{\theta}(x|z)p(z)
+$$  
 
-where $$ p(z) $$ is a continuous distribution and the form of $$ p(x|z) $$ is dependent
-on the data we would like to model. Often a simple prior like $$ p(z) = \mathcal{N}(0, I) $$ is chosen for 
-analytic tractability.
+For simplicity assume $$ p(z) = \mathcal{N}(0, I) $$.
+Furthermore, we will set $$ p_{\theta}(x|z) $$ as a diagonal gaussian, parameterized by a neural network.  
 
 If you have studied mixture distributions before (see my [previous post] for an
-introduction), the form of this equation will look quite familiar. This is because
-we have just defined an infinite mixture distribution! This can be
-realised by noticing that for every value $$ z $$ of our continuous prior we have a
-separate conditional distribution $$ x ~ p(x|z) $$.
+introduction) this equation will look quite familiar. This is because we have just defined an infinite mixture distribution! 
+For each value $$ z $$ of the continuous prior distribution, there is a corresponding likelihood $$ p(x|z) $$.
 
 We could try to learn this model directly by maximising:
 
+
 ...
 
-However, this approach suffers from high-variance and does not scale to high dimensions. To alleviate this,
-we introduce a learned proposal distribution $$ q(z|x) $$, which allows the model to focus on high-probability
+However, it is well known that his approach suffers from high-variance and does not scale to high dimensions. To alleviate this,
+we introduce a learned proposal distribution $$ q_{\phi}(z|x) $$, which allows the model to focus on high-probability
 regions of the latent space. A typical derivation for this model is as follows:
 
 ...
@@ -55,7 +54,10 @@ regions of the latent space. A typical derivation for this model is as follows:
 
 For completeness, we have the following graphical model:
 
-![VAE]({{ "/assets/images/vae.png" }})
+__Figure 1 - Graphical Model for VAE__
+{: style="text-align: center;" }
+<img class="image" src='{{ "/assets/images/vae.png" }}' height=200px>
+<!-- ![VAE]() -->
 
 
 The key insight of Kingma and Welling was to introduce a low-variance gradient estimator for this model,
@@ -65,11 +67,15 @@ reader to (...).
 
 ### Hierarchical Variational Autoencoders
 
-
+__Figure 2 - A Hierarchical VAE__
+{: style="text-align: center;" }
+<img class="image" src='{{ "/assets/images/hierarchical-vae.png" }}' height=200px>
 
 ### DDPM as a Restricted Class of Hierarchical VAE
 
-
+__Figure 2 - Denoising Diffusion Probabilistic Model__
+{: style="text-align: center;" }
+<img class="image" src='{{ "/assets/images/diffusion.png" }}' height=200px>
 
 
 ### References
