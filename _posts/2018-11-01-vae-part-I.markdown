@@ -12,16 +12,16 @@ comments: false
 ### Introduction
 
 Recently I have been studying a class of generative models called diffusion models. This line of research
-grabbed my attention with the release of "Denoising Diffusion Probabilistic Models" (Ho et al, 2020), which showed
+came to my attention with the release of "Denoising Diffusion Probabilistic Models" (Ho et al, 2020), which showed
 that a CNN trained with a variational lower bound could produce competitive results to a GAN on image modelling. 
-As an audio researcher, I was parcticularly excited to these insights translated to audio modelling with the release
-of "DiffWave: A Versatile Diffusion Model for Audio Synthesis" (Kong et al, 2020). As well as providing a competitive neural
-vocoder, Kong showed that the same model could perform zero-shot denoising and unconditional audio modelling (link to results).
+As an audio researcher, I was especially excited when these insights were applied to audio modelling in 
+"DiffWave: A Versatile Diffusion Model for Audio Synthesis" (Kong et al, 2020). As well as providing a competitive neural
+vocoder, Kong showed that the same pre-trained model could perform zero-shot denoising. and unconditional audio modelling (link to results).
 
 What is fascinating about these models, is that they have deep connections to variational auto-encoding (ref), score-based generative modelling (ref), and 
-stochastic differential equations (ref). In this series of blog posts I want to untangle the theory of Ho's model from the perpspective
+stochastic differential equations (ref). In this series of blog posts I want to untangle the theory of Ho's DDPM model from the perpspective
 of variational inference. This is the perspective I am most comfortable with, and I hope that I can build up the theory in an accessible and
-intuitive way. Ideally, you will at least be familiar with variational auto-encoders. However I will do a quick refresher.
+intuitive way.
 ...
 
 
@@ -30,29 +30,47 @@ intuitive way. Ideally, you will at least be familiar with variational auto-enco
 Consider the following generative model,
 
 $$
-  p(x) = \int_{z}p_{\theta}(x|z)p(z)
+  p(x) = \int_{z}p_{\theta}(x|z)p_{\theta}(z)
 $$  
 
-For simplicity assume $$ p(z) = \mathcal{N}(0, I) $$.
-Furthermore, we will set $$ p_{\theta}(x|z) $$ as a diagonal gaussian, parameterized by a neural network.  
+In general, the form of the prior $$ p_{\theta}(z) $$ and likelihood $$ p_{\theta}(x|z) $$ will depend on the data we are trying to model.
+For simplicity, lets assume a fixed prior of $$ p(z) = \mathcal{N}(0, I) $$. For continous data, we can set $$ p_{\theta}(x|z) $$ to a diagonal gaussian,
+with entries $$ \mu_{\theta}(z) \text{, } \sigma_{\theta}(z) $$ given by the output of a neural network. 
 
 If you have studied mixture distributions before (see my [previous post] for an
-introduction) this equation will look quite familiar. This is because we have just defined an infinite mixture distribution! 
-For each value $$ z $$ of the continuous prior distribution, there is a corresponding likelihood $$ p(x|z) $$.
+introduction) this equation will look quite familiar. We have just defined an infinite mixture of gaussians! 
+For every possible value $$ z \sim \mathcal{N}(0, I) $$ there is a corresponding likelihood $$ \mathcal{N}(\mu_{\theta}(z), \sigma_{\theta}(z)) $$.
 
-We could try to learn this model directly by maximising:
+Typically the true distribution $$ p(x) $$ is unknown, and we would like to fit the model to some empirically observed subset $$ \hat{p}(x) $$.
+We could estimate the model parameters $$ \theta $$ with MLE as follows,
 
+$$
+  \theta^{*} = \underset{\theta}{\text{argmax}} \text{ } \mathbb{E}_{x \sim \hat{p}(x), \text{ } z \sim p(z)}  \left[ \text{log } p_{\theta}(x|z; \theta) \right]
+$$
 
-...
+However, it is well known that this approach suffers from high variance and does not scale to more than a few dimensions. Intuitively, the likelihood of a random latent
+code $$ z \sim \mathcal{N}(0, I) $$ corresponding to a specific data point $$ x \sim \hat{p}(x) $$ is extremely small (especially in high dimensions!). 
+The VAE solves this problem by sampling $$ z $$ from a new distribution $$ q_{\phi}(z|x) $$, which is jointly optimised with the generative model. This focuses the optimisation onto regions of high probability.
 
-However, it is well known that his approach suffers from high-variance and does not scale to high dimensions. To alleviate this,
-we introduce a learned proposal distribution $$ q_{\phi}(z|x) $$, which allows the model to focus on high-probability
-regions of the latent space. A typical derivation for this model is as follows:
+This can be derived as follows:
 
-...
+$$
+  p(x) = \int p_{\theta}(x|z)p(z) \\
+  p(x) = \int q_{\phi}(z|x) \frac{p_{\theta}(x|z)p(z)}{q_{\phi}(z|x)}\\
+  \text{log }p(x) = \text{log } \mathbb{E}_{z \sim q_{\phi}(z|x)} \left[ \frac{p_{\theta}(x|z)p(z)}{q_{\phi}(z|x)} \right]\\
+  \text{log }p(x) \geq \mathbb{E}_{z \sim q_{\phi}(z|x)} \left[ \text{log } \frac{p_{\theta}(x|z)p(z)}{q_{\phi}(z|x)} \right]
+$$
 
+The final step follows from Jensen's inequality and the fact that log is a concave function. The right-hand side of this inequality
+is the evidence lower-bound (ELBO), sometimes denoted $$ \mathcal{L}(\theta, \phi) $$. The ELBO provides a joint optimisation objective, 
+which simultaneously updates the variational posterior $$ q_{\phi}(z|x) $$ and likelihood model $$ p_{\theta}(x|z) $$.
 
-For completeness, we have the following graphical model:
+To optimise the ELBO we have to obtain gradients for $$ \phi $$ through a stochastic sampling operation $$ z \sim q_{\phi}(z|x) $$.
+Kingma and Welling famously solved this issue with a "reparameterization trick", which defines the sampling process as a combination of
+a deterministic data-dependent function and data-independent noise (REF).
+
+So much has been said about VAEs, that I am barely scratching the surface here. For the interested reader, the following
+blogs do a great job of explaining them further: ...
 
 __Figure 1 - Graphical Model for VAE__
 {: style="text-align: center;" }
@@ -60,12 +78,11 @@ __Figure 1 - Graphical Model for VAE__
 <!-- ![VAE]() -->
 
 
-The key insight of Kingma and Welling was to introduce a low-variance gradient estimator for this model,
-by way of the reparameterization trick. Plenty has been written on this already, so I will direct the interested
-reader to (...).
-
-
 ### Hierarchical Variational Autoencoders
+
+Having defined a VAE with a single stochastic layer, it is trivial to derive multi-layer extensions.
+
+
 
 __Figure 2 - A Hierarchical VAE__
 {: style="text-align: center;" }
