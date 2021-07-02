@@ -11,17 +11,15 @@ comments: false
 
 ### Introduction
 
-Recently I have been studying a class of generative models called diffusion models. This line of research
-came to my attention with the release of "Denoising Diffusion Probabilistic Models" (Ho et al, 2020), which showed
-that a CNN trained with a variational lower bound could produce competitive results to a GAN on image modelling. 
-As an audio researcher, I was especially excited when these insights were applied to audio modelling in 
-"DiffWave: A Versatile Diffusion Model for Audio Synthesis" (Kong et al, 2020). As well as providing a competitive neural
-vocoder, Kong showed that the same pre-trained model could perform zero-shot denoising. and unconditional audio modelling (link to results).
+Recently I have been studying a class of generative models called diffusion models. These models have deep connections to 
+variational auto-encoding (ref), neural compression (ref), score-based generative modelling (ref), and stochastic differential equations (ref).
+They first caught my attention with the release of "Denoising Diffusion Probabilistic Models" (DDPM) (Ho et al, 2020). This work showed 
+that a CNN trained with a variational lower bound is competitive with GANs on image generation. The same insights have subsequently been applied
+to audio, produce a competitive neural vocoders which can also perform zero-shot denoising (Kong et al, 2020).
 
-What is fascinating about these models, is that they have deep connections to variational auto-encoding (ref), score-based generative modelling (ref), and 
-stochastic differential equations (ref). In this series of blog posts I want to untangle the theory of Ho's DDPM model from the perpspective
-of variational inference. This is the perspective I am most comfortable with, and I hope that I can build up the theory in an accessible and
-intuitive way.
+In this blog I want to explore Jonathon Ho's DDPM model from the perpsective of variational inference. This is the perspective 
+I am most comfortable with, and I hope that I can build up the theory in an accessible and intuitive way. I will also release a 
+corresponding implementation in PyTorch, with a focus on readability and education.
 ...
 
 
@@ -81,14 +79,66 @@ __Figure 1 - Graphical Model for VAE__
 ### Hierarchical Variational Autoencoders
 
 Having defined a VAE with a single stochastic layer, it is trivial to derive multi-layer extensions.
+Consider a VAE with two latent variables $$ z_1 $$ and $$ z_2 $$. We begin by considering the joint 
+distribution $$ p(x, z_1, z_2) $$ and marginalising out the latent variables:  
 
+$$
+  p(x) = \int_{z_1} \int_{z_2} p(x, z_1, z_2) dz_1, dz_2
+$$
 
+Once again, we can introduce a variational posterior as follows:
+
+$$
+  p(x) = \int \int q(z_1, z_2|x) \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)}\\
+  p(x) = \mathbb{E}_{z_1 ,z_2 \sim q(z_1, z_2|x)} \left[ \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)} \right]
+$$
+
+Taking the log and applying Jensen's rule:
+
+$$
+  \text{log } p(x) \geq \mathbb{E}_{z_1 ,z_2 \sim q(z_1, z_2|x)} \left[ \text{log } \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)} \right]
+$$
+
+Notice how I have only written these expressions in terms of the joint distributions 
+$$ p(x, z_1, z_2) $$ and $$ q(z_1, z_2|x) $$. I have done this to emphasise the fact that we are free
+to factorise the inference and generative models as we see fit. In practice, some factorisations
+are more suitable than others [Tomczak reference]. For now lets consider the factorisation in Figure 2.
 
 __Figure 2 - A Hierarchical VAE__
 {: style="text-align: center;" }
 <img class="image" src='{{ "/assets/images/hierarchical-vae.png" }}' height=200px>
 
+This corresponds to the following factorisation of the generative model,
+
+$$
+  p(x,z_1,z_2) = p(x|z_1)p(z_1|z_2)p(z_2)
+$$
+
+and the inference model,
+
+$$
+q(z_1,z_2|x) = q(z_1|x)q(z_2|z_1)
+$$
+
+If we expand the ELBO for this factorization, we arrive at the following:
+
+$$
+
+$$
+
+
 ### DDPM as a Restricted Class of Hierarchical VAE
+
+
+DDPM is a specific realisation of a hierarchical VAE, with the following properties:
+- The generative and inference models are both factorised as markov chains.
+- The inference model has no learned parameters; The form of each layer is wholly determined by the timestep.
+- Each generative layer shares parameters and is conditioned on timestep.
+- Expressivity comes from defining a large number of layers.
+
+
+
+
 
 __Figure 2 - Denoising Diffusion Probabilistic Model__
 {: style="text-align: center;" }
