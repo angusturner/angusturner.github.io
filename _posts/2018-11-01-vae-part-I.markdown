@@ -11,19 +11,25 @@ comments: false
 
 ### Introduction
 
-Recently I have been studying a class of generative models called diffusion models. These models have deep connections to 
-variational auto-encoding (ref), neural compression (ref), score-based generative modelling (ref), and stochastic differential equations (ref).
-They first caught my attention with the release of "Denoising Diffusion Probabilistic Models" (DDPM) (Ho et al, 2020). This work showed 
-that a CNN trained with a variational lower bound is competitive with GANs on image generation. The same insights have subsequently been applied
-to audio, produce a competitive neural vocoders which can also perform zero-shot denoising (Kong et al, 2020).
+Recently I have been studying a class of generative models known as diffusion probabilistic models. These models were proposed by Jascha Sohl-Dickstein in 2015 (REF), 
+but did not catch my attention until last year when Jonathon Ho released "Denoising Diffusion Probabilistic Models" (DDPM) (REF). Building on the work of Sohl-Dickstein,
+Ho presented a model that can match or surpass GANs on image generation, while using a stable objective based on an approximate likelihood - no adversarial objective 
+required. 
 
-In this blog I want to explore Jonathon Ho's DDPM model from the perpsective of variational inference. This is the perspective 
-I am most comfortable with, and I hope that I can build up the theory in an accessible and intuitive way. I will also release a 
-corresponding implementation in PyTorch, with a focus on readability and education.
+Since the release of DDPM, there has been a torrent of renewed interest in diffusion models. Related works have extended their success to the domain
+of audio modelling (REF), text-to-speech (REF), and multivariate time-series forecasting (REF). What is fascinating about these models,
+is their deep connections to variational autoencoding (REF), neural compression (REF), score-based generative modelling (REF), 
+and stochastic differential equations (REF). 
+
+In this blog I want to focus on building up the intuition of diffusion models, as they are presented in DDPM and a few select related works. 
+I want to hightlight the relationship between VAEs and DDPM, since this was the process that helped most with my own understanding. 
+I have also released a PyTorch implementation of DDPM, with a focus on readability and education.
 ...
 
 
-### Variational Autoencoders - A Quick Refresher
+### Variational Autoencoders
+
+I want to begin with a quick refresher of variational autoencoders. If this is all feels familiar to you, feel free to skip ahead!
 
 Consider the following generative model,
 
@@ -32,12 +38,12 @@ $$
 $$  
 
 In general, the form of the prior $$ p_{\theta}(z) $$ and likelihood $$ p_{\theta}(x|z) $$ will depend on the data we are trying to model.
-For simplicity, lets assume a fixed prior of $$ p(z) = \mathcal{N}(0, I) $$. For continous data, we can set $$ p_{\theta}(x|z) $$ to a diagonal gaussian,
+For simplicity, assume $$ p(z) = \mathcal{N}(0, I) $$. For continous data we can set $$ p_{\theta}(x|z) $$ to a diagonal gaussian,
 with entries $$ \mu_{\theta}(z) \text{, } \sigma_{\theta}(z) $$ given by the output of a neural network. 
 
-If you have studied mixture distributions before (see my [previous post] for an
+<!-- If you have studied mixture distributions before (see my [previous post] for an
 introduction) this equation will look quite familiar. We have just defined an infinite mixture of gaussians! 
-For every possible value $$ z \sim \mathcal{N}(0, I) $$ there is a corresponding likelihood $$ \mathcal{N}(\mu_{\theta}(z), \sigma_{\theta}(z)) $$.
+For each value $$ z \sim \mathcal{N}(0, I) $$ there is a corresponding likelihood given by $$ \mathcal{N}(\mu_{\theta}(z), \sigma_{\theta}(z)) $$. -->
 
 Typically the true distribution $$ p(x) $$ is unknown, and we would like to fit the model to some empirically observed subset $$ \hat{p}(x) $$.
 We could estimate the model parameters $$ \theta $$ with MLE as follows,
@@ -47,13 +53,15 @@ $$
 $$
 
 However, it is well known that this approach suffers from high variance and does not scale to more than a few dimensions. Intuitively, the likelihood of a random latent
-code $$ z \sim \mathcal{N}(0, I) $$ corresponding to a specific data point $$ x \sim \hat{p}(x) $$ is extremely small (especially in high dimensions!). 
-The VAE solves this problem by sampling $$ z $$ from a new distribution $$ q_{\phi}(z|x) $$, which is jointly optimised with the generative model. This focuses the optimisation onto regions of high probability.
+code $$ z \sim p(z) $$ corresponding to any particular data point is extremely small (especially in high dimensions!) (REF). 
+
+The VAE solves this problem by sampling $$ z $$ from a new distribution $$ q_{\phi}(z|x) $$, which is jointly optimised with the generative model. 
+This focuses the optimisation on regions of high probability (i.e. latent codes that are likely to have generated $$ x $$).
 
 This can be derived as follows:
 
 $$
-  p(x) = \int p_{\theta}(x|z)p(z) \\
+  p(x) = \int_{z} p_{\theta}(x|z)p(z) \\
   p(x) = \int q_{\phi}(z|x) \frac{p_{\theta}(x|z)p(z)}{q_{\phi}(z|x)}\\
   \text{log }p(x) = \text{log } \mathbb{E}_{z \sim q_{\phi}(z|x)} \left[ \frac{p_{\theta}(x|z)p(z)}{q_{\phi}(z|x)} \right]\\
   \text{log }p(x) \geq \mathbb{E}_{z \sim q_{\phi}(z|x)} \left[ \text{log } \frac{p_{\theta}(x|z)p(z)}{q_{\phi}(z|x)} \right]
@@ -64,16 +72,14 @@ is the evidence lower-bound (ELBO), sometimes denoted $$ \mathcal{L}(\theta, \ph
 which simultaneously updates the variational posterior $$ q_{\phi}(z|x) $$ and likelihood model $$ p_{\theta}(x|z) $$.
 
 To optimise the ELBO we have to obtain gradients for $$ \phi $$ through a stochastic sampling operation $$ z \sim q_{\phi}(z|x) $$.
-Kingma and Welling famously solved this issue with a "reparameterization trick", which defines the sampling process as a combination of
+Kingma and Welling famously solved this with a "reparameterization trick", which defines the sampling process as a combination of
 a deterministic data-dependent function and data-independent noise (REF).
-
-So much has been said about VAEs, that I am barely scratching the surface here. For the interested reader, the following
-blogs do a great job of explaining them further: ...
 
 __Figure 1 - Graphical Model for VAE__
 {: style="text-align: center;" }
 <img class="image" src='{{ "/assets/images/vae.png" }}' height=200px>
-<!-- ![VAE]() -->
+
+So much has been written about VAEs that I am barely scratching the surface here. For more details see: [Further Reading].
 
 
 ### Hierarchical Variational Autoencoders
@@ -99,7 +105,7 @@ $$
   \text{log } p(x) \geq \mathbb{E}_{z_1 ,z_2 \sim q(z_1, z_2|x)} \left[ \text{log } \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)} \right]
 $$
 
-Notice how I have only written these expressions in terms of the joint distributions 
+Notice how I have written these expressions in terms of the joint distributions 
 $$ p(x, z_1, z_2) $$ and $$ q(z_1, z_2|x) $$. I have done this to emphasise the fact that we are free
 to factorise the inference and generative models as we see fit. In practice, some factorisations
 are more suitable than others [Tomczak reference]. For now lets consider the factorisation in Figure 2.
@@ -117,24 +123,44 @@ $$
 and the inference model,
 
 $$
-q(z_1,z_2|x) = q(z_1|x)q(z_2|z_1)
+  q(z_1,z_2|x) = q(z_1|x)q(z_2|z_1)
 $$
 
-If we expand the ELBO for this factorization, we arrive at the following:
+Expanding the ELBO for this factorization, we get:
 
 $$
+  \mathcal{L}(\theta, \phi) = \mathbb{E}_{q(z_1, z_2|x)} 
+  \left[ \text{log }p(x|z_1) - \text{log }q(z_1|x) + \text{log }p(z_1|z_2) - \text{log }q(z_2 | z_1) + \text{log }p(z_2)  \right]\\
+$$
 
+Which can be alternatively written as a "reconstruction term", and the KL divergence between each inference layer and its corresponding prior:
+
+$$
+= \mathbb{E}_{q(z_1|z_2)} \left[ \text{log }p(x|z_1) \right] - D_{KL} \left( q(z_1|x) \mathrel{\Vert} p(z_1|x) \right)
+  - D_{KL} \left( q(z_2|z_1) \mathrel{\Vert} p(z_2) \right)
 $$
 
 
-### DDPM as a Restricted Class of Hierarchical VAE
 
 
-DDPM is a specific realisation of a hierarchical VAE, with the following properties:
-- The generative and inference models are both factorised as markov chains.
-- The inference model has no learned parameters; The form of each layer is wholly determined by the timestep.
-- Each generative layer shares parameters and is conditioned on timestep.
+### Denoising Diffusion Probabilistic Models
+
+In a sense, we can think of DDPM as a specific realisation of a hierarchical VAE with the following properties:
+- The latent dimension is constrained to match the data dimension.
+- The generative and inference pathways are both factorised as markov chains.
+- The inference model has no learned parameters; the form of each layer is wholly determined by the timestep.
+- Each generative layer shares parameters and is conditioned on the timestep.
 - Expressivity comes from defining a large number of layers.
+
+
+More specfically, DDPM defines the inference model as a "diffusion process". Beginning with a data point
+$$ x_0 ~ p(x) $$, each step of the posterior ("the forward process") adds noise to the previous layer. 
+The form of this process is designed so that the final latent $$ x_T $$ converges to a standard gaussian.
+
+Take a look at the visualisation below: 
+
+
+
 
 
 
