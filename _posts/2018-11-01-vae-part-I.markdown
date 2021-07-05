@@ -105,7 +105,7 @@ $$
   \text{log } p(x) \geq \mathbb{E}_{z_1 ,z_2 \sim q(z_1, z_2|x)} \left[ \text{log } \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)} \right]
 $$
 
-Notice how I have written these expressions in terms of the joint distributions 
+Notice that I have written these expressions in terms of the joint distributions 
 $$ p(x, z_1, z_2) $$ and $$ q(z_1, z_2|x) $$. I have done this to emphasise the fact that we are free
 to factorise the inference and generative models as we see fit. In practice, some factorisations
 are more suitable than others [Tomczak reference]. For now lets consider the factorisation in Figure 2.
@@ -145,30 +145,62 @@ $$
 
 ### Denoising Diffusion Probabilistic Models
 
-In a sense, we can think of DDPM as a specific realisation of a hierarchical VAE with the following properties:
-- The latent dimension is constrained to match the data dimension.
-- The generative and inference pathways are both factorised as markov chains.
-- The inference model has no learned parameters; the form of each layer is wholly determined by the timestep.
-- Each generative layer shares parameters and is conditioned on the timestep.
-- Expressivity comes from defining a large number of layers.
+Now consider the model in Figure 3. We have sequence of $$ T $$ variables, where $$ x_0 \sim p(x) $$ is
+our observed data and $$ x_{1:T} $$ are latent variables.
 
-
-More specfically, DDPM defines the inference model as a "diffusion process". Beginning with a data point
-$$ x_0 ~ p(x) $$, each step of the posterior ("the forward process") adds noise to the previous layer. 
-The form of this process is designed so that the final latent $$ x_T $$ converges to a standard gaussian.
-
-Take a look at the visualisation below: 
-
-
-
-
-
-
-
-
-__Figure 2 - Denoising Diffusion Probabilistic Model__
+__Figure 3 - Denoising Diffusion Probabilistic Model__
 {: style="text-align: center;" }
 <img class="image" src='{{ "/assets/images/diffusion.png" }}' height=200px>
+
+The lower bound for this model should hopefully seem quite familiar by now:
+
+$$
+  \mathcal{L} = \mathbb{E}_{q} \left[ -\text{log }p(x_T) - \sum_{t \geq 1}^{T} \text{log } \frac{p_{\theta}(x_{t-1}|x_t)}{q(x_t|x_{t-1})} \right]
+$$
+
+In fact, we can think of DDPM as a specific realisation of a hierarchical VAE. What sets it apart is a
+unique inference model, which contains no learnable parameters and is constructed so that
+the final latent distribution $$ q(x_T) $$ converges to a standard gaussian. This "forward process"
+model is defined as follows:
+
+$$
+  q(x_t|x_{t-1}) = \mathcal{N}(x_T\mathrel{;} x_{t-1}\sqrt{1 - \beta_{t}}, \beta_{t}I)
+$$
+
+The variables $$ \beta_1 \dots \beta_{T} $$ define a fixed variance schedule, chosen such
+that $$ q(x_T|x_0) \approx \mathcal{N}(0, I) $$. The forward process is illustrated below, 
+transforming samples from the "swiss roll" distribution (REF) into gaussian noise:
+
+<style>
+  .video {
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+    /* width: 100%; */
+    max-height: 500px;
+    max-width: 500px;
+  }
+</style>
+
+<video class="video" loop autoplay preload='auto' poster="/assets/images/fig_000.png">
+  <source src='/assets/video/forward_process.mp4' type='video/mp4'>
+</video>
+
+
+DDPM is specific realisation of a hierarchical VAE, with the following properties:
+- The generative and inference pathways are both factorised as markov chains.
+- The latent dimensionality is constrained to match the data dimensionality.
+- The inference pathway has no learned parameters; the form of each layer is wholly determined by its index `t`.
+- Each generative layer shares parameters.
+- Expressivity comes from defining a chain with many layers (or "timesteps").
+
+<!-- 
+More specfically, DDPM defines the inference model as a diffusion process. Beginning with a data point
+$$ x_0 \sim p(x) $$, each step of the inference pathway ("forward process") adds noise to the previous layer. The form of 
+this process is designed so that the latent distribution $$ p(x_T) $$ converges to a standard gaussian.
+To generate data we sample $$ x_T \sim \mathcal{N}(0, I) $$ and transform it through the generative pathway 
+("reverse process") to recover a sample from $$ x_0 \sim p(x) $$. -->
+
 
 
 ### References
