@@ -11,19 +11,26 @@ comments: false
 
 ### Introduction
 
-Recently I have been studying a class of generative models known as diffusion probabilistic models. These models were proposed by Jascha Sohl-Dickstein in 2015 (REF), 
-but did not catch my attention until last year when Jonathon Ho released "Denoising Diffusion Probabilistic Models" (DDPM) (REF). Building on the work of Sohl-Dickstein,
-Ho presented a model that can match or surpass GANs on image generation, while using a stable objective based on an approximate likelihood - no adversarial objective 
-required. 
+Recently I have been studying a class of generative models known as diffusion probabilistic models. These models were proposed by Sohl-Dickstein 
+et al. in 2015 [[1]](#citation-1), however they first caught my attention last year when Ho et al. released 
+"Denoising Diffusion Probabilistic Models" [[2]](#citation-2). Building on the earlier work of Sohl-Dickstein et al., 
+Ho et al. showed that a model trained with a stable variational objective could match or surpass GANs on image generation.
 
-Since the release of DDPM, there has been a torrent of renewed interest in diffusion models. Related works have extended their success to the domain
-of audio modelling (REF), text-to-speech (REF), and multivariate time-series forecasting (REF). What is fascinating about these models,
-is their deep connections to variational autoencoding (REF), neural compression (REF), score-based generative modelling (REF), 
-and stochastic differential equations (REF). 
+Since the release of DDPM there has been a wave of renewed interest in diffusion models. New works have extended their success to the domain
+of audio modelling [[8]](#citation-8), text-to-speech [[9]]((#citation-9)), and multivariate time-series forecasting [[10]](#citation-10). Furthermore, 
+as shown by Ho et al. [[2]](#citation-2), these models exhibit close connections with score-based models [[11]](#citation-11), and the two perspectives 
+were recently unified under the framework of stochastic differential equations [[4]](#citation-4). 
 
-In this blog I want to focus on building up the intuition of diffusion models, as they are presented in DDPM and a few select related works. 
-I want to hightlight the relationship between VAEs and DDPM, since this was the process that helped most with my own understanding. 
-I have also released a PyTorch implementation of DDPM, with a focus on readability and education.
+As a generative model, diffusion models have a number of unique and interesting properties. For example, trained models are able to
+perform inpainting [[1]](#citation-1) and zero-shot denoising [[8]](#citation-8) without being explicitly designed for these tasks. Furthermore,
+the variational bound used in DDPM highlights further connections to variational autoencoders and neural compression (Ho et al ICLR).
+
+In this blog I want to explore diffusion models as they are presented in Sohl-Dickstein et al. [[1]](#citation-1), and Ho et al. [[2]](#citation-2).
+When I was working through these derivations, I found it useful to conceptualise these models in terms of their relationship to VAEs [[3]](#citation-3). This is 
+the perspective I will develop in this blog, working up from a simple VAE derivation, through to hierarchical extensions, and finally the 
+generative markov chain that is presented in DDPM.
+
+I have also released a PyTorch implementation of my code...
 ...
 
 
@@ -49,11 +56,13 @@ Typically the true distribution $$ p(x) $$ is unknown, and we would like to fit 
 We could estimate the model parameters $$ \theta $$ with MLE as follows,
 
 $$
-  \theta^{*} = \underset{\theta}{\text{argmax}} \text{ } \mathbb{E}_{x \sim \hat{p}(x), \text{ } z \sim p(z)}  \left[ \text{log } p_{\theta}(x|z; \theta) \right]
+  \theta^{*} = \underset{\theta}{\text{argmax}} \text{ } \mathbb{E}_{x \sim \hat{p}(x) \text{, } z \sim p(z)}  \left[ \text{log } p_{\theta}(x|z; \theta) \right]
 $$
 
-However, it is well known that this approach suffers from high variance and does not scale to more than a few dimensions. Intuitively, the likelihood of a random latent
-code $$ z \sim p(z) $$ corresponding to any particular data point is extremely small (especially in high dimensions!) (REF). 
+Since we cannot compute this expectation in closed form we can resort to monte-carlo sampling, evaluating the expression for random 
+samples $$ z \sim p(z) $$. However, it is well known that this approach does not scale to high dimensions of $$ z $$ [[5]](#citation-5).
+Intuitively, the likelihood of a random latent code $$ z \sim p(z) $$ corresponding to any particular data point is extremely small
+(especially in high dimensions!).
 
 The VAE solves this problem by sampling $$ z $$ from a new distribution $$ q_{\phi}(z|x) $$, which is jointly optimised with the generative model. 
 This focuses the optimisation on regions of high probability (i.e. latent codes that are likely to have generated $$ x $$).
@@ -73,7 +82,7 @@ which simultaneously updates the variational posterior $$ q_{\phi}(z|x) $$ and l
 
 To optimise the ELBO we have to obtain gradients for $$ \phi $$ through a stochastic sampling operation $$ z \sim q_{\phi}(z|x) $$.
 Kingma and Welling famously solved this with a "reparameterization trick", which defines the sampling process as a combination of
-a deterministic data-dependent function and data-independent noise (REF).
+a deterministic data-dependent function and data-independent noise [[3]](#citation-3).
 
 __Figure 1 - Graphical Model for VAE__
 {: style="text-align: center;" }
@@ -108,7 +117,7 @@ $$
 Notice that I have written these expressions in terms of the joint distributions 
 $$ p(x, z_1, z_2) $$ and $$ q(z_1, z_2|x) $$. I have done this to emphasise the fact that we are free
 to factorise the inference and generative models as we see fit. In practice, some factorisations
-are more suitable than others [Tomczak reference]. For now lets consider the factorisation in Figure 2.
+are more suitable than others (as shown in [[7]](#citation-7)). For now lets consider the factorisation in Figure 2.
 
 __Figure 2 - A Hierarchical VAE__
 {: style="text-align: center;" }
@@ -207,12 +216,92 @@ To generate data we sample $$ x_T \sim \mathcal{N}(0, I) $$ and transform it thr
 
 {% include citation.html
     no="1"
-    authors="Aaron van den Oord, Sander Dieleman, 
-    Heiga Zen, Karen Simonyan, Oriol Vinyals, Alex Graves, Nal Kalchbrenner, Andrew Senior, and Koray Kavukcuoglu"
-    title="Wavenet: A generative model for raw audio"
-    year="2016"
-    link="https://arxiv.org/abs/1609.03499v2"
+    authors="Jascha Sohl-Dickstein, Eric A. Weiss, Niru Maheswaranathan, Surya Ganguli"
+    title="Deep Unsupervised Learning using Nonequilibrium Thermodynamics"
+    year="2015"
+    link="https://arxiv.org/abs/1503.03585v8"
 %}
+
+{% include citation.html
+    no="2"
+    authors="Jonathan Ho, Ajay Jain, Pieter Abbeel"
+    title="Denoising Diffusion Probabilistic Models"
+    year="2020"
+    link="https://arxiv.org/abs/2006.11239v2"
+%}
+
+{% include citation.html
+    no="3"
+    authors="Diederik P Kingma, Max Welling"
+    title="Auto-Encoding Variational Bayes"
+    year="2013"
+    link="https://arxiv.org/abs/1312.6114"
+%}
+
+{% include citation.html
+    no="4"
+    authors="Yang Song, Jascha Sohl-Dickstein, Diederik P. Kingma, Abhishek Kumar, Stefano Ermon, Ben Poole"
+    title="Score-Based Generative Modeling through Stochastic Differential Equations"
+    year="2021"
+    link="https://arxiv.org/abs/2011.13456v2"
+%}
+
+{% include citation.html
+    no="5"
+    authors="Adam Kosiorek"
+    title="What is wrong with VAEs?"
+    year="2018"
+    link="https://akosiorek.github.io/ml/2018/03/14/what_is_wrong_with_vaes.html"
+%}
+
+{% include citation.html
+    no="6"
+    authors="Lilian Weng"
+    title="From Autoencoder to Beta-VAE"
+    year="2018"
+    link="https://lilianweng.github.io/lil-log/2018/08/12/from-autoencoder-to-beta-vae.html"
+%}
+
+{% include citation.html
+    no="7"
+    authors="Jakub M. Tomczak, Max Welling"
+    title="VAE with a VampPrior"
+    year="2018"
+    link="https://arxiv.org/abs/1705.07120v5"
+%}
+
+{% include citation.html
+  no="8"
+  authors="Zhifeng Kong, Wei Ping, Jiaji Huang, Kexin Zhao, Bryan Catanzaro"
+  title="DiffWave: A Versatile Diffusion Model for Audio Synthesis"
+  year="2021"
+  link="https://arxiv.org/abs/2009.09761v3"
+%}
+
+{% include citation.html
+  no="9"
+  authors="Vadim Popov, Ivan Vovk, Vladimir Gogoryan, Tasnima Sadekova, Mikhail Kudinov"
+  title="Grad-TTS: A Diffusion Probabilistic Model for Text-to-Speech"
+  year="2021"
+  link="https://arxiv.org/abs/2105.06337v1"
+%}
+
+{% include citation.html
+  no="10"
+  authors="Kashif Rasul, Calvin Seward, Ingmar Schuster, Roland Vollgraf"
+  title="Autoregressive Denoising Diffusion Models for Multivariate Probabilistic Time Series Forecasting"
+  year="2021"
+  link="https://arxiv.org/abs/2101.12072v2"
+%}
+
+{% include citation.html
+  no="11"
+  authors="Yang Song, Stefano Ermon"
+  title="Generative Modeling by Estimating Gradients of the Data Distribution"
+  year="2020"
+  link="https://arxiv.org/abs/1907.05600v3"
+%}
+
 
 {% if page.comments %}
 {% include disqus.html %}
