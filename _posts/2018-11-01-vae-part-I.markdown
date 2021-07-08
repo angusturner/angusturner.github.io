@@ -9,6 +9,8 @@ comments: false
 {% include mathjax.html %}
 {% include styles.html %}
 
+$$ \require{cancel} $$
+
 ### Introduction
 
 Recently I have been studying a class of generative models known as diffusion probabilistic models. These models were proposed by Sohl-Dickstein 
@@ -159,10 +161,10 @@ __Figure 3 - Denoising Diffusion Probabilistic Model__
 {: style="text-align: center;" }
 <img class="image" src='{{ "/assets/images/diffusion.png" }}' height=200px>
 
-The lower bound for this model should hopefully seem quite familiar by now:
+The lower bound for this model should look quite familiar by now (negated, for consistency with Ho et al. [[2]](#citation-2)):
 
 $$
-  \mathcal{L} = \mathbb{E}_{q} \left[ -\text{log }p(x_T) - \sum_{t \geq 1}^{T} \text{log } \frac{p_{\theta}(x_{t-1}|x_t)}{q(x_t|x_{t-1})} \right]
+  L = \mathbb{E}_{q} \left[ -\text{log }p(x_T) - \sum_{t \geq 1}^{T} \text{log } \frac{p_{\theta}(x_{t-1}|x_t)}{q(x_t|x_{t-1})} \right]
 $$
 
 In fact, we can think of DDPM as a specific realisation of a hierarchical VAE. What sets it apart is a
@@ -213,33 +215,72 @@ $$
   q(x_t|x_{t-1}) = \frac{q(x_{t-1}|x_t)q(x_t)}{q(x_{t-1})}
 $$
 
-Ordinarily this would be intractable to compute, but due to the markov propety of the forward process
-we have:
+The terms $$ q(x_t) $$ and $$ q(x_{t-1}) $$ are intractable to compute, as they would require marginalising over all data points. 
+However, due to the markov propety of the forward process we have:
 
 $$
   q(x_t|x_{t-1}) = q(x_t|x_{t-1},x_0)
 $$
 
-Put simply, the distribution on $$ x_{t} $$ is entirely determined by the previous step in the chain;
-we do not learn anything extra about the trajectory of a particle by knowing the starting point $$ x_0 $$.
-Taking our result from bayes rule, and conditioning on $$ x_0 $$ we get:
+Therefore, by conditioning all terms on $$ x_0 $$ we arrive at the following expression.
 
 $$
-  q(x_t|x_{t-1}) = \frac{q(x_{t-1}|x_t,x_0)q(x_t|x_0)}{q(x_{t-1}|x_0)}
+  q(x_t|x_{t-1}) = \frac{q(x_{t-1}|x_t,x_0)q(x_t|x_0)}{q(x_{t-1}|x_0)} \tag{1}
 $$
 
+We now have an equation with one unknown $$ q(x_{t-1}|x_t,x_0) $$. This is
+referred to as the "forward process posterior", and we will return to it shortly. 
+First, lets continue our work on the ELBO. Separating the contribution from the
+first term in the sum:
+
+$$
+  L = \mathbb{E}_{q} \left[ -\text{log }p(x_T) - \text{log } \frac{p_{\theta}(x_0|x_1)}{q(x_1|x_0)} -
+  \sum_{t \gt 1}^{T} \text{log } \frac{p_{\theta}(x_{t-1}|x_t)}{q(x_t|x_{t-1})} \right] \tag{2}
+$$
+
+Substituting (1) into (2) we get,
+
+$$
+  \mathbb{E}_{q} \left[ -\text{log }p(x_T) - \text{log } \frac{p_{\theta}(x_0|x_1)}{q(x_1|x_0)} -
+  \sum_{t \gt 1}^{T} \left( \text{log } \frac{p_{\theta}(x_{t-1}|x_t)}{q(x_{t-1}|x_t,x_0)} + 
+  \text{log } \frac{q(x_{t-1}|x_0)}{q(x_t|x_0)} \right) \right]
+$$
+
+Notice what happens what happens to the conditionals
+$$ q(x_t|x_0) $$ when we expand the sum:
+
+$$
+  \cancel{\text{log }q(x_1|x_0)} - \cancel{\text{log }q(x_1|x_0)} + \dots + \text{log }q(x_T|x_0)
+$$
+
+These cancellations lead to the following bound:
+
+$$
+  \mathbb{E}_{q} \left[ 
+    \underbrace{-\text{log }p(x_T) + \text{log }q(x_T|x_0)}_{L_T} - 
+    \underbrace{\text{log } p_{\theta}(x_0|x_1)}_{L_0} - 
+    \underbrace{\sum_{t \gt 1}^{T} \text{log } \frac{p_{\theta}(x_{t-1}|x_t)}{q(x_{t-1}|x_t,x_0)}}_{L_{1:T-1}}
+  \right]
+$$
+
+$$ L_T $$ has no parameters, and simply measures the effectiveness of the forward process in producing a standard gaussian. 
+$$ L_0 $$ is the reconstruction term, and the summand represents the divergences between each generative layer and the 
+corresponding forward process posteriors.
 
 
 
 
 
 
+
+
+<!-- 
 DDPM is specific realisation of a hierarchical VAE, with the following properties:
 - The generative and inference pathways are both factorised as markov chains.
 - The latent dimensionality is constrained to match the data dimensionality.
 - The inference pathway has no learned parameters; the form of each layer is wholly determined by its index `t`.
 - Each generative layer shares parameters.
-- Expressivity comes from defining a chain with many layers (or "timesteps").
+- Expressivity comes from defining a chain with many layers (or "timesteps"). -->
 
 <!-- 
 More specfically, DDPM defines the inference model as a diffusion process. Beginning with a data point
