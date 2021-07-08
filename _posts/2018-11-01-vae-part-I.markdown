@@ -276,13 +276,13 @@ borrowed from [[2]](#citation-2) for consistency. In DDPM, Ho et al. propose a s
 generative model, which simplifies the training and connects it to score based modelling.
 
 We start by noting the form of the forward process posterior. This result can be derived from bayes rule, 
-substituting the known gaussian conditionals into equation (1). For those interested, a full derivation 
-is presented in the appendix of [[8]](#citation-8).
+substituting the known gaussian conditionals into equation (1). For those interested, a detailed derivation 
+is presented by Kong et al. [[8]](#citation-8) (Appendix A).
 
 $$
   q(x_{t-1}|x_t,x_0) = \mathcal{N}(x_{t-1};\tilde{\mu}(x_t,x_0),\tilde{\beta}_t I)\\
   \tilde{\mu}_t(x_t,x_0) = \frac{ \sqrt{\bar{\alpha}_{t-1}} \beta_{t} }{1 - \bar{\alpha}_t} x_0 + 
-  \frac{ \sqrt{\bar{\alpha}_t} (1 - \bar{\alpha}_{t-1}) }{1 - \bar{\alpha}_t} x_t\\
+  \frac{ \sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1}) }{1 - \bar{\alpha}_t} x_t \tag{3} \\
   \tilde{\beta}_t = \frac{ 1 - \bar{\alpha}_{t-1} }{1 - \bar{\alpha}_t } \beta_t
 $$
 
@@ -296,26 +296,116 @@ $$
 The variance $$ \sigma_{t}^2 $$ is a time-dependent constant (either $$ \beta_t $$ or $$ \tilde{\beta}_t) $$. The 
 mean $$ \mu_{\theta}(x_t, t) $$ is a neural network, which takes as input $$ x_t $$. In order to share 
 parameters between timesteps, the conditioning variable $$ t $$ is introduced in the form of positional 
-embeddings [[12]].
+embeddings [[12]](#citation-12).
 
 With these definitions, the KL divergence terms in $$ L_{t-1} $$ reduce to the following
 mean-square error:
 
 $$
-  L_{t-1} = \mathbb{E}_{t,x_t,x0} \left[ \frac{1}{2\sigma_t^2} \lVert \tilde{\mu}_t(x_t,x_0) - \mu_{\theta}(x_t, t) \rVert \right] + C
+  L_{t-1} = \mathbb{E}_{t,x_t,x0} \left[ \frac{1}{2\sigma_t^2} \lVert \tilde{\mu}_t(x_t,x_0) - \mu_{\theta}(x_t, t) \rVert \right] + C \tag{4}
 $$
 
-As it is written here, this objective is suitable for training. However, Ho et al. propose a different parameterisation
-that seems to provide better empircal results.
+This objective is suitable for optimisation, however Ho et al. continue expanding to arrive at an alternative 
+denoising objective. Note that forward process samples $$ x_t $$ can be written as a function of
+$$ x_0 $$ and some noise $$ \epsilon \sim \mathcal{N}(0, I) $$.
 
+$$
+  x_t(x_0, \epsilon) = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1 - \bar{\alpha}_t} \epsilon \tag{5}
+$$
 
+Conversely, for a given sample $$ x_t(x_0, \epsilon) $$ we can express $$ x_0 $$
+as,
 
+$$
+  x_0 = \frac{x_t(x_0, \epsilon) - \sqrt{1 - \bar{\alpha}_t} \epsilon}{\sqrt{\bar{\alpha}_t}} \tag{6}
+$$
 
+At this point, Ho et al. rewrite the forward process posterior mean (3) in terms of $$ x_t(x_0, \epsilon) $$,
+by evaluating:
 
+$$
+  \tilde{\mu}_t \left( x_t(x_0, \epsilon), \frac{1}{\sqrt{\bar{\alpha}_t}} \left( x_t(x_0, \epsilon) - \sqrt{1 - \bar{\alpha}_t} \epsilon \right) \right)
+$$
 
+This expands to,
 
+$$
+  = 
+  \frac{ \beta_{t} \sqrt{\bar{\alpha}_{t-1}} (x_t - \epsilon \sqrt{\bar{\alpha}_t}) }{\sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t)}  + 
+  \frac{ \sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1}) }{1 - \bar{\alpha}_t} x_t\\
+  = \left( \frac{ \beta_{t} \sqrt{\bar{\alpha}_{t-1}} }{ \sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t) } +
+  \frac{ \sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1}) }{1 - \bar{\alpha}_t} \right) x_t -
+  \frac{\beta_t \sqrt{1 - \bar{\alpha}_{t-1}}}{ \sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t) } \epsilon
+$$
 
+At this point we have a considerable mess of algebraic terms, however it simplifies down
+quite nicely. We can make use of the following facts:
 
+$$
+  \bar{\alpha}_t = \bar{\alpha}_{t-1} \alpha_t\\
+  \beta_t = 1 - \alpha_t
+$$
+
+The coefficient of $$ x_t $$ can be simplified, by multiplying the top and bottom by $$ \sqrt{\alpha_t} $$:
+
+$$
+  = \frac{1}{\sqrt{\alpha_t}} \cdot \frac{\beta_t + \alpha_t(1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t}\\
+  = \frac{1}{\sqrt{\alpha_t}} \cdot \frac{1 - \alpha_t + \alpha_t - \alpha_t \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t}\\
+  = \frac{1}{\sqrt{\alpha_t}}
+$$
+
+The coefficient of $$ \epsilon $$ simplifies to,
+
+$$
+  = - \frac{1}{\sqrt{\alpha_t}} \cdot \frac{1}{\sqrt{1 - \bar{\alpha}_t}}
+$$
+
+Now we can rewrite (4) as follows,
+
+$$
+  L_{t-1} = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{1}{2\sigma_t^2} \left\lVert \frac{1}{\sqrt{\alpha_t}} \cdot 
+  \left( x_t(x_0, \epsilon) - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \epsilon \right) - 
+  \mu_{\theta}(x_t(x_0, \epsilon), t) \right\rVert \right] + C \tag{7}
+$$
+
+From (7), we observe that the model $$ \mu_{\theta} $$ must predict,
+
+$$
+  \frac{1}{\sqrt{\alpha}} \cdot 
+  \left( x_t(x_0, \epsilon) - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \right)
+$$
+
+In other words, we are providing the model with $$ x_t, t $$ and asking it to predict some affine transformation
+of $$ x_t $$. This affine transform is a combination of time-dependent constants, and a single free parameter $$ \epsilon $$. 
+This motivates an alternative parameterisation, where the neural net is only responsible for predicting the noise $$ \epsilon $$. 
+
+$$
+  \mu_{\theta}(x_t, t) = \frac{1}{\sqrt{\alpha_t}} \cdot 
+  \left( x_t(x_0, \epsilon) - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \epsilon_{\theta}(x_t, t) \right) \tag{8}
+$$
+
+Substituting (8) into (7),
+
+$$
+  L_{t-1} = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{1}{2\sigma_t^2} \left\lVert \frac{\beta_t}{ \sqrt{\alpha_t} \sqrt{1 - \bar{\alpha}_t} } \cdot 
+  \left( \epsilon - \epsilon_{\theta}(x_t, t) \right) \right\rVert \right] + C\\
+$$
+$$
+  = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{\beta_t^2}{2\sigma_t^2 \alpha_t (1 - \bar{\alpha}_t)} \left\lVert 
+   \epsilon - \epsilon_{\theta}(x_t, t) \right\rVert \right] + C \tag{9}
+$$
+
+We arrive at a denoising objective, which permits the following interpretation:
+- The sample $$ x_t $$ is given by a stochastic function of the previous step $$ x_{t-1} $$
+- Given a sample $$ x_t $$ we want to predict the noise $$ \epsilon $$ that will allow us to recover $$ x_{t-1} $$.
+
+Finally, Ho et al. note that by omitting the constant terms the objective can be simplified further still. This
+yields a weighted version of the variational bound, with the weighting of each layer dependent on the timestep
+and the chosen variance schedule. Empirically this yields better results.
+
+### Final Thoughts
+
+TODO
 
 <!-- 
 DDPM is specific realisation of a hierarchical VAE, with the following properties:
