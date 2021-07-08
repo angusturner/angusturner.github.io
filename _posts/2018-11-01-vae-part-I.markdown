@@ -123,7 +123,7 @@ __Figure 2 - A Hierarchical VAE__
 {: style="text-align: center;" }
 <img class="image" src='{{ "/assets/images/hierarchical-vae.png" }}' height=200px>
 
-This corresponds to the following factorisation of the generative model,
+Writing this out, we have the generative model,
 
 $$
   p(x,z_1,z_2) = p(x|z_1)p(z_1|z_2)p(z_2)
@@ -135,21 +135,19 @@ $$
   q(z_1,z_2|x) = q(z_1|x)q(z_2|z_1)
 $$
 
-Expanding the ELBO for this factorization, we get:
+Substituting these factorizations into the ELBO, we get:
 
 $$
   \mathcal{L}(\theta, \phi) = \mathbb{E}_{q(z_1, z_2|x)} 
   \left[ \text{log }p(x|z_1) - \text{log }q(z_1|x) + \text{log }p(z_1|z_2) - \text{log }q(z_2 | z_1) + \text{log }p(z_2)  \right]\\
 $$
 
-Which can be alternatively written as a "reconstruction term", and the KL divergence between each inference layer and its corresponding prior:
+This can be alternatively written as a "reconstruction term", and the KL divergence between each inference layer and its corresponding prior:
 
 $$
 = \mathbb{E}_{q(z_1|z_2)} \left[ \text{log }p(x|z_1) \right] - D_{KL} \left( q(z_1|x) \mathrel{\Vert} p(z_1|x) \right)
   - D_{KL} \left( q(z_2|z_1) \mathrel{\Vert} p(z_2) \right)
 $$
-
-
 
 
 ### Denoising Diffusion Probabilistic Models
@@ -194,6 +192,46 @@ transforming samples from the "swiss roll" distribution (REF) into gaussian nois
 <video class="video" loop autoplay preload='auto' poster="/assets/images/fig_000.png">
   <source src='/assets/video/forward_process.mp4' type='video/mp4'>
 </video>
+
+A nice property of the forward process is that we can directly sample from any timestep:
+
+$$
+  \alpha_t := 1-\beta_t\\
+  \hat{\alpha}_t := \prod_{s=1}^{t} \alpha_s \\
+  q(x_t|x_0) = \mathcal{N}\left(\sqrt{\hat{\alpha}_t}x_0, (1-\hat{\alpha}_t)I \right)
+$$
+
+One consequence of this, is that DDPM is able to draw random samples $$ t ~ \sim \{1 \dots T \} $$ as part of
+training procedure, optimising a random set of conditionals $$ p_{\theta} ( x_{t-1} | x_t ) $$ 
+with each minibatch. In other words, we do not have to do a complete pass of the forward and reverse processes
+on each step of training.
+
+Another consequence, is that we can make additional manipulations to the lower-bound to reduce the variance.
+This proceeeds by observing the following result (from bayes rule): 
+
+$$
+  q(x_t|x_{t-1}) = \frac{q(x_{t-1}|x_t)q(x_t)}{q(x_{t-1})}
+$$
+
+Ordinarily this would be intractable to compute, but due to the markov propety of the forward process
+we have:
+
+$$
+  q(x_t|x_{t-1}) = q(x_t|x_{t-1},x_0)
+$$
+
+Put simply, the distribution on $$ x_{t} $$ is entirely determined by the previous step in the chain;
+we do not learn anything extra about the trajectory of a particle by knowing the starting point $$ x_0 $$.
+Taking our result from bayes rule, and conditioning on $$ x_0 $$ we get:
+
+$$
+  q(x_t|x_{t-1}) = \frac{q(x_{t-1}|x_t,x_0)q(x_t|x_0)}{q(x_{t-1}|x_0)}
+$$
+
+
+
+
+
 
 
 DDPM is specific realisation of a hierarchical VAE, with the following properties:
