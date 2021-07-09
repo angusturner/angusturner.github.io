@@ -381,19 +381,37 @@ This motivates an alternative parameterisation, where the neural net is only res
 
 $$
   \mu_{\theta}(x_t, t) = \frac{1}{\sqrt{\alpha_t}} \cdot 
-  \left( x_t(x_0, \epsilon) - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \epsilon_{\theta}(x_t, t) \right) \tag{8}
+  \left( x_t(x_0, \epsilon) - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right) \tag{8}
 $$
 
 Substituting (8) into (7),
 
 $$
   L_{t-1} = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{1}{2\sigma_t^2} \left\lVert \frac{\beta_t}{ \sqrt{\alpha_t} \sqrt{1 - \bar{\alpha}_t} } \cdot 
-  \left( \epsilon - \epsilon_{\theta}(x_t, t) \right) \right\rVert \right] + C\\
+  \left( \epsilon - \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right) \right\rVert \right] + C\\
 $$
+
 $$
   = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{\beta_t^2}{2\sigma_t^2 \alpha_t (1 - \bar{\alpha}_t)} \left\lVert 
-   \epsilon - \epsilon_{\theta}(x_t, t) \right\rVert \right] + C \tag{9}
+   \epsilon - \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right\rVert \right] + C \tag{9}
 $$
+
+
+### What does this all mean?
+
+The derivations to arrive at the final DDPM objective can be a bit daunting, or at least they were
+to me when I went through them. Lets try to unpack what it means.
+
+Equation (9) corresponds to a single layer of the variational bound, and we can optimise
+it to train a DDPM model. This permits the following interpretation:
+
+- We sample a data point $$ x_0 \sim p(x) $$, a random timestep $$ t $$ and some random 
+noise $$ \epsilon \sim \mathcal{N}(0, U) $$ 
+- Based on the properties of the forward process, we can compute $$ x_t(x_0, \epsilon) $$,
+which represents a sample from $$ q(x_t|x_0) $$.
+- The forward process posterior gives us a closed-form distribution over $$ x_{t-1} $$. We would
+like our generative model to match this
+- 
 
 We arrive at a denoising objective, which permits the following interpretation:
 - The sample $$ x_t $$ is given by a stochastic function of the previous step $$ x_{t-1} $$
@@ -405,7 +423,7 @@ and the chosen variance schedule. Empirically this yields better results.
 
 ### Final Thoughts
 
-TODO
+
 
 <!-- 
 DDPM is specific realisation of a hierarchical VAE, with the following properties:
