@@ -65,7 +65,7 @@ decreasing.
 In order to quickly test my implementation, I created a synthetic dataset of
 points sampled from three 2-dimensional gaussians, as follows:
 
-{% highlight python %}
+```python
 def sample(mu, var, nb_samples=500):
     """
     :param mu: torch.Tensor (features)
@@ -78,7 +78,7 @@ def sample(mu, var, nb_samples=500):
             torch.normal(mu, var.sqrt())
         ]
     return torch.stack(out, dim=0)
-{% endhighlight %}
+```
 
 
 ![Synthetic]({{ "/assets/images/synthetic.png" }})
@@ -89,7 +89,7 @@ def sample(mu, var, nb_samples=500):
 For the sake of simplicity, I just randomly select `K` points from my dataset to
 act as initial means. I use a fixed initial variance and a uniform prior.
 
-{% highlight python %}
+```python
 def initialize(data, K, var=1):
   """
   :param data: design matrix (examples, features)
@@ -108,7 +108,7 @@ def initialize(data, K, var=1):
   pi = torch.empty(k).fill_(1. / k)
 
   return mu, var, pi
-{% endhighlight %}
+```
 
 
 ### The Multivariate Gaussian
@@ -156,7 +156,7 @@ the exponent we derived above, plus the constant normalisation term). Note that 
 could use the in-built PyTorch [distributions] package for this, however for transparency
 here is my own functional implementation:
 
-{% highlight python %}
+```python
 log_norm_constant = -0.5 * np.log(2 * np.pi)
 
 def log_gaussian(x, mean=0, logvar=0.):
@@ -176,12 +176,12 @@ def log_gaussian(x, mean=0, logvar=0.):
   log_p = log_p + log_norm_constant
 
   return log_p
-{% endhighlight %}
+```
 
 To compute the likelihood of every point under every gaussian in parallel,
 we can exploit tensor broadcasting as follows:
 
-{% highlight python %}
+```python
 def get_likelihoods(X, mu, logvar, log=True):
   """
   :param X: design matrix (examples, features)
@@ -206,7 +206,7 @@ def get_likelihoods(X, mu, logvar, log=True):
       log_likelihoods.exp_()
 
   return log_likelihoods
-{% endhighlight %}
+```
 
 
 ### Computing Posteriors
@@ -223,7 +223,7 @@ as they $$ z $$ can
 explain the observation $$ x $$. Since our likelihoods are in the log-domain,
 we exploit the logsumexp trick for stability.
 
-{% highlight python %}
+```python
 def get_posteriors(log_likelihoods):
   """
   Calculate the the posterior probabilities log p(z|x), assuming a uniform prior over
@@ -233,7 +233,7 @@ def get_posteriors(log_likelihoods):
   """
   posteriors = log_likelihoods - logsumexp(log_likelihoods, dim=0, keepdim=True)
   return posteriors
-{% endhighlight %}
+```
 
 ### Parameter Update
 
@@ -242,7 +242,7 @@ Using the membership weights, the parameter update proceeds in three steps:
 2. Set new covariance matrix as weighted combination of covariances for each data point.
 3. Set new prior, as the normalised sum of the membership weights.
 
-{% highlight python %}
+```python
 def get_parameters(X, log_posteriors, eps=1e-6, min_var=1e-6):
   """
   :param X: design matrix (examples, features)
@@ -274,7 +274,7 @@ def get_parameters(X, log_posteriors, eps=1e-6, min_var=1e-6):
   pi = N_k / N_k.sum()
 
   return mu.squeeze(1), logvar.squeeze(1), pi.squeeze()
-{% endhighlight %}
+```
 
 ### Results
 
@@ -282,7 +282,16 @@ Apart from some simple training logic, that is the bulk of the algorithm! Here i
 a visualisation of EM fitting three components to the synthetic data I generated
 earlier:
 
-<video loop autoplay preload='auto' height='740px' width='740px' poster="/assets/images/fig_8.png">
+<style>
+  .video {
+    display: flex;
+    width: 100%;
+    max-height: 740px;
+    max-width: 740px;
+  }
+</style>
+
+<video class="video" loop autoplay preload='auto' poster="/assets/images/fig_8.png">
   <source src='/assets/video/output.webm' type='video/webm; codecs="vp9, vorbis"'>
 </video>
 
