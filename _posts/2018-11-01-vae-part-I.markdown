@@ -363,9 +363,9 @@ $$
 Now we can rewrite (4) as follows,
 
 $$
-  L_{t-1} = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{1}{2\sigma_t^2} \left\lVert \frac{1}{\sqrt{\alpha_t}} \cdot 
+  L_{t-1} - C = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{1}{2\sigma_t^2} \left\lVert \frac{1}{\sqrt{\alpha_t}} \cdot 
   \left( x_t(x_0, \epsilon) - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \epsilon \right) - 
-  \mu_{\theta}(x_t(x_0, \epsilon), t) \right\rVert \right] + C \tag{7}
+  \mu_{\theta}(x_t(x_0, \epsilon), t) \right\rVert \right] \tag{7}
 $$
 
 From (7), we observe that the model $$ \mu_{\theta} $$ must predict,
@@ -387,39 +387,45 @@ $$
 Substituting (8) into (7),
 
 $$
-  L_{t-1} = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{1}{2\sigma_t^2} \left\lVert \frac{\beta_t}{ \sqrt{\alpha_t} \sqrt{1 - \bar{\alpha}_t} } \cdot 
-  \left( \epsilon - \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right) \right\rVert \right] + C\\
+  = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{1}{2\sigma_t^2} \left\lVert \frac{\beta_t}{ \sqrt{\alpha_t} \sqrt{1 - \bar{\alpha}_t} } \cdot 
+  \left( \epsilon - \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right) \right\rVert \right]\\
 $$
 
 $$
   = \mathbb{E}_{x_0,\epsilon,t} \left[ \frac{\beta_t^2}{2\sigma_t^2 \alpha_t (1 - \bar{\alpha}_t)} \left\lVert 
-   \epsilon - \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right\rVert \right] + C \tag{9}
+   \epsilon - \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right\rVert \right] \tag{9}
 $$
 
+Finally Ho et al. note that omitting the term $$ \frac{\beta_t^2}{2\sigma_t^2 \alpha_t (1 - \bar{\alpha}_t)} $$
+leads to weighted variant of the lower bound, which (aside from being simpler) leads to better empirical results.
 
-### What does this all mean?
+$$
+  = \mathbb{E}_{x_0,\epsilon,t} \left[ 
+      \left\lVert \epsilon - \epsilon_{\theta}(x_t(x_0, \epsilon), t) \right\rVert 
+    \right] \tag{10}
+$$
 
-The derivations to arrive at the final DDPM objective can be a bit daunting, or at least they were
-to me when I went through them. Lets try to unpack what it means.
+### DDPM Interpretation
 
-Equation (9) corresponds to a single layer of the variational bound, and we can optimise
-it to train a DDPM model. This permits the following interpretation:
+On its own the DDPM derivation can seem a bit daunting. Equation (10) corresponds to a 
+single layer of the variational bound, and we can optimise it to train a DDPM model. 
+In summary:
 
 - We sample a data point $$ x_0 \sim p(x) $$, a random timestep $$ t $$ and some random 
 noise $$ \epsilon \sim \mathcal{N}(0, U) $$ 
 - Based on the properties of the forward process, we can compute $$ x_t(x_0, \epsilon) $$,
 which represents a sample from $$ q(x_t|x_0) $$.
-- The forward process posterior gives us a closed-form distribution over $$ x_{t-1} $$. We would
-like our generative model to match this
-- 
+- The forward process posterior $$ q(x_{t-1}|x_t,x_0) $$ has a closed-form distribution,
+which we compute based on knowing $$ x_0 $$ and our sample $$ x_t $$.
+- We want to match to minimise the KL divergence between the generative layer $$ p_{\theta}(x_{t-1}|x_t) $$
+and the forward process posterior.
+- Based on an analysis of the KL divergence, the variational bound reduces to a denoising objective.
 
-We arrive at a denoising objective, which permits the following interpretation:
-- The sample $$ x_t $$ is given by a stochastic function of the previous step $$ x_{t-1} $$
+In short, we can explain the denoising objective as follows:
+- Each step in the forward process $$ x_t $$ is given by a stochastic function of the previous step $$ x_{t-1} $$
 - Given a sample $$ x_t $$ we want to predict the noise $$ \epsilon $$ that will allow us to recover $$ x_{t-1} $$.
 
-Finally, Ho et al. note that by omitting the constant terms the objective can be simplified further still. This
-yields a weighted version of the variational bound, with the weighting of each layer dependent on the timestep
-and the chosen variance schedule. Empirically this yields better results.
+As a final note, Ho et. al note that
 
 ### Final Thoughts
 
