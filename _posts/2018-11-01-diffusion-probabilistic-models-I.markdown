@@ -11,7 +11,7 @@ comments: false
 
 $$ \require{cancel} $$
 
-### Introduction
+### <a name="introduction"></a>Introduction
 
 Recently I have been studying a class of generative models known as diffusion probabilistic models. These models were proposed by Sohl-Dickstein 
 et al. in 2015 [[1]](#citation-1), however they first caught my attention last year when Ho et al. released 
@@ -19,7 +19,7 @@ et al. in 2015 [[1]](#citation-1), however they first caught my attention last y
 trained with a stable variational objective could match or surpass GANs on image generation.
 
 Since the release of DDPM there has been a wave of renewed interest in diffusion models. New works have extended their success to the domain
-of audio modelling [[8]](#citation-8), text-to-speech [[9]]((#citation-9)), and multivariate time-series forecasting [[10]](#citation-10). Furthermore, 
+of audio modelling [[8]](#citation-8)[[16]](#citation-16), text-to-speech [[9]](#citation-9), and multivariate time-series forecasting [[10]](#citation-10). Furthermore, 
 as shown by Ho et al. [[2]](#citation-2), these models exhibit close connections with score-based models [[11]](#citation-11), and the two perspectives 
 were recently unified under the framework of stochastic differential equations [[4]](#citation-4). 
 
@@ -35,23 +35,20 @@ and some possible ideas for further research.
 
 I have also released a PyTorch implementation of my [code].
 
-### Variational Autoencoders
+### <a name="variational-autoencoders"></a>Variational Autoencoders
 
 I want to begin with a quick refresher of variational autoencoders [[3]](#citation-3). If this is all feels familiar to you, feel free to skip ahead!
 
 Consider the following generative model,
 
 $$
-  p(x) = \int_{z}p_{\theta}(x|z)p_{\theta}(z)
+  p_{\theta}(x) = \int_{z}p_{\theta}(x|z)p_{\theta}(z)
 $$  
 
 In general, the form of the prior $$ p_{\theta}(z) $$ and likelihood $$ p_{\theta}(x|z) $$ will depend on the data we are trying to model.
-For simplicity, assume $$ p(z) = \mathcal{N}(0, I) $$. For continous data we can set $$ p_{\theta}(x|z) $$ to a diagonal gaussian,
-with entries $$ \mu_{\theta}(z) \text{, } \sigma_{\theta}(z) $$ given by the output of a neural network. 
-
-<!-- If you have studied mixture distributions before (see my [previous post] for an
-introduction) this equation will look quite familiar. We have just defined an infinite mixture of gaussians! 
-For each value $$ z \sim \mathcal{N}(0, I) $$ there is a corresponding likelihood given by $$ \mathcal{N}(\mu_{\theta}(z), \sigma_{\theta}(z)) $$. -->
+For simplicity we often set $$ p(z) := \mathcal{N}(0, I) $$. If $$ x $$ is a continuous variable, we might choose $$ p_{\theta}(x|z) $$
+as a factorised gaussian distribution, with the mean $$ \mu_{\theta}(z) $$ and variance $$ \sigma_{\theta}(z) $$ parameterised by a neural
+network.
 
 Typically the true distribution $$ p(x) $$ is unknown, and we would like to fit the model to some empirically observed subset $$ \hat{p}(x) $$.
 We could estimate the model parameters $$ \theta $$ with MLE as follows,
@@ -87,12 +84,13 @@ a deterministic data-dependent function and data-independent noise [[3]](#citati
 
 __Figure 1 - Graphical Model for VAE__
 {: style="text-align: center;" }
-<img class="image" src='{{ "/assets/images/vae.png" }}' height=200px>
+<img class="image" src='{{ "/assets/images/vae.png" }}'>
 
-So much has been written about VAEs that I am barely scratching the surface here. For more details see: [Further Reading].
+So much has been written about VAEs that I am barely scratching the surface here. For those interested to learn more,
+see the section on [further reading](#further-reading).
 
 
-### Hierarchical Variational Autoencoders
+### <a name="hierarchical-variational-autoencoders"></a>Hierarchical Variational Autoencoders
 
 Having defined a VAE with a single stochastic layer, it is trivial to derive multi-layer extensions.
 Consider a VAE with two latent variables $$ z_1 $$ and $$ z_2 $$. We begin by considering the joint 
@@ -122,7 +120,7 @@ are more suitable than others (as shown in [[7]](#citation-7)). For now lets con
 
 __Figure 2 - A Hierarchical VAE__
 {: style="text-align: center;" }
-<img class="image" src='{{ "/assets/images/hierarchical-vae.png" }}' height=200px>
+<img class="image" src='{{ "/assets/images/hierarchical-vae.png" }}'>
 
 Writing this out, we have the generative model,
 
@@ -151,14 +149,14 @@ $$
 $$
 
 
-### Diffusion Probabilistic Models
+### <a name="diffusion-probabilistic-models"></a>Diffusion Probabilistic Models
 
 Now consider the model in Figure 3. We have sequence of $$ T $$ variables, where $$ x_0 \sim p(x) $$ is
 our observed data and $$ x_{1:T} $$ are latent variables.
 
 __Figure 3 - Diffusion Probabilistic Model__
 {: style="text-align: center;" }
-<img class="image" src='{{ "/assets/images/diffusion.png" }}' height=200px>
+<img class="image" src='{{ "/assets/images/diffusion.png" }}'>
 
 The lower bound for this model should look quite familiar by now (negated, for consistency with Ho et al. [[2]](#citation-2)):
 
@@ -191,7 +189,7 @@ transforming samples from the 2d swiss roll distribution into gaussian noise:
 </style>
 
 <video class="video" loop autoplay preload='auto' poster="/assets/images/fig_000.png">
-  <source src='/assets/video/forward_process.mp4' type='video/mp4'>
+  <source src='/assets/video/forward_process_trim.mp4' type='video/mp4'>
 </video>
 
 A nice property of the forward process is that we can directly sample from any timestep:
@@ -265,10 +263,10 @@ $$
 
 $$ L_T $$ has no parameters, and simply measures the effectiveness of the forward process in producing a standard gaussian. 
 The summands in $$ L_{t-1} $$ are KL divergences between gaussians, which can be calculated in closed-form (as opposed to
-using high-variance monte-carlo estimates). Lastly, $$ L_0 $$ is the familiar reconstruction term.
+using high variance monte-carlo estimates). Lastly, $$ L_0 $$ is the familiar reconstruction term.
 
 
-### Denoising Diffusion Probabilistic Models
+### <a name="denoising-diffusion-probabilistic-models"></a>Denoising Diffusion Probabilistic Models
 
 So far our derivation matches with the original Sohl-Dickstein et al. paper [[1]](#citation-1), with notation
 borrowed from [[2]](#citation-2) for consistency. In DDPM, Ho et al. propose a specific parameterization of the
@@ -330,19 +328,21 @@ This expands to,
 
 $$
   = 
-  \frac{ \beta_{t} \sqrt{\bar{\alpha}_{t-1}} (x_t - \epsilon \sqrt{\bar{\alpha}_t}) }{\sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t)}  + 
+  \frac{ \beta_{t} \sqrt{\bar{\alpha}_{t-1}} (x_t - \epsilon \sqrt{1 - \bar{\alpha}_t}) }{\sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t)}  + 
   \frac{ \sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1}) }{1 - \bar{\alpha}_t} x_t\\
   = \left( \frac{ \beta_{t} \sqrt{\bar{\alpha}_{t-1}} }{ \sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t) } +
   \frac{ \sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1}) }{1 - \bar{\alpha}_t} \right) x_t -
-  \frac{\beta_t \sqrt{1 - \bar{\alpha}_{t-1}}}{ \sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t) } \epsilon
+  \frac{\beta_t \sqrt{\bar{\alpha}_{t-1}} \sqrt{1 - \bar{\alpha}_{t}}}{ \sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t) } \epsilon
 $$
 
-At this point we have a considerable mess of algebraic terms, however it simplifies down
-quite nicely. Recall the fact that $$ \bar{\alpha}_t = \bar{\alpha}_{t-1} \alpha_t $$, and 
-$$ \beta_t = 1 - \alpha_t $$. We can simplify the coefficient of $$ x_t $$ by multiplying the top 
-and bottom by $$ \sqrt{\alpha_t} $$:
+With a bit of manipulation this can be drastically simplified. Lets deal with the coeffient of $$ x_t $$ first, using the
+fact that $$ \bar{\alpha}_t = \bar{\alpha}_{t-1} \alpha_t $$ and $$ \beta_t = 1 - \alpha_t $$:
 
 $$
+  = \left( \frac{ \beta_{t} \sqrt{\bar{\alpha}_{t-1}} }{ \sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t) } +
+  \frac{ \sqrt{\alpha_t} (1 - \bar{\alpha}_{t-1}) }{1 - \bar{\alpha}_t} \right) \cdot \frac{ \sqrt{\alpha_t} }{ \sqrt{\alpha_t} } \\
+  = \frac{ \beta_{t} \sqrt{\bar{\alpha}_{t}} }{ \sqrt{\alpha_t}\sqrt{\bar{\alpha}_t}(1 - \bar{\alpha}_t) } +
+  \frac{ \alpha_t (1 - \bar{\alpha}_{t-1}) }{\sqrt{\alpha_t}(1 - \bar{\alpha}_t)} \\
   = \frac{1}{\sqrt{\alpha_t}} \cdot \frac{\beta_t + \alpha_t(1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t}\\
   = \frac{1}{\sqrt{\alpha_t}} \cdot \frac{1 - \alpha_t + \alpha_t - \alpha_t \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t}\\
   = \frac{1}{\sqrt{\alpha_t}}
@@ -351,7 +351,7 @@ $$
 The coefficient of $$ \epsilon $$ simplifies to,
 
 $$
-  = - \frac{1}{\sqrt{\alpha_t}} \cdot \frac{1}{\sqrt{1 - \bar{\alpha}_t}}
+  = - \frac{\beta_t}{\sqrt{\alpha_t} \sqrt{1 - \bar{\alpha}_t}}
 $$
 
 Now we can rewrite (4) as follows,
@@ -362,7 +362,7 @@ $$
   \mu_{\theta}(x_t(x_0, \epsilon), t) \right\rVert \right] \tag{7}
 $$
 
-From (7), we observe that the model $$ \mu_{\theta} $$ must predict,
+From (7), we observe that the loss is minimised when $$ \mu_{\theta} $$ predicts,
 
 $$
   \frac{1}{\sqrt{\alpha}} \cdot 
@@ -399,7 +399,7 @@ $$
     \right] \tag{10}
 $$
 
-### DDPM Interpretation
+### <a name="ddpm-interpretation"></a>DDPM Interpretation
 
 On its own the DDPM derivation can seem a bit daunting. Let's summarise:
 
@@ -414,21 +414,43 @@ and the corresponding forward process posterior.
 - By analysing the bound we see that minimising this divergence is equivalent to predicting
 the noise $$ \epsilon $$ that is required to invert the forward process.
 
-### DDPM as a kind of VAE
+### <a name="ddpm-as-a-kind-of-vae"></a>DDPM as a kind of VAE
 
 Okay, so while it technically optimises a variational bound, the DDPM model looks quite different
-from the original VAE presented by Kingma. Some of you are probably thinking: "Is it really
-fair to claim this is a 'kind of VAE'"? 
+from the original VAE presented by Kingma. Some of you are probably thinking: _Is it really
+fair to claim this is a kind of VAE?_ 
 
-And you would have a fair point. I mean, DDPM has no learnable parameters for the inference model.
-And it doesn't really resemble an autoencoder. However, I do think it is valuable to think about the
-connections for a few reasons. First, VAEs have been studied extensively, whereas DDPM seems 
-relatively underexplored. It is possible that insights from the VAE literature might
-be translatable to DDPM and vice versa.
+I suspect this this is largely a matter of semantics. However, we can say that DDPM is similar to VAE in the following
+respects:
+- We have a generative model (the reverse process) that involves sampling some latent variable and transforming 
+it into data with a neural network
+- We have a corresponding inference model (the forward process), which transforms data into a series 
+of latent representations.
+- The training objective is a lower bound on the data likelihood, which can be derived in a similar fashion to the VAE.
 
-Furthermore, thinking about how DDPM fits within the current taxonomy of generative models
-has left me with a lot of questions. Perhaps some of these already have answers in the literature,
-and others could be a topic for future exploration.
+We also have the following key differences:
+- The inference model or 'forward process' in DDPM has no learned parameters
+- The forward process in DDPM progressively destroys all information about the input, such that the final distribution
+$$ q(x_T|x_0) $$ is a standard gaussian by construction. This is typically not true with VAEs.
+- In DDPM the dimensionality of each latent must match the data. In VAEs we can reduce dimensionality.
+- In DDPM, each generative layer shares the same neural network parameters. This is not typical for VAEs,
+however it should be possible in theory (I am not sure if it has been explored).
+
+I think it is useful to think about the connections to VAEs for a few reasons. Firstly, it helps to
+situate DDPM within the expanding taxonomy of deep generative models. VAEs are a ubiquitous model nowadays, 
+with a wealth of resources explaining how they work and how to implement them. Approaching DDPM from the angle of the
+VAE was helpful for developing my own intuition, as I hope it is for those reading.
+
+Furthermore, it is intersting to consider how this overlap might inspire future research directions. There have been countless 
+proposed variations and improvements to the VAE, including all kinds of flexible posterior and prior distributions, 
+decoders, constrained optimisation techniques, connections to information theory and compression etc. It is possible that some
+ideas from the VAE literature could be translatable to DDPM and vice versa. Perhaps in the future we will see some 
+interesting hybrid models combining the strengths of the two techniques.
+
+### <a name="open-questions"></a>Open Questions
+
+Thinking about DDPM has raised a lot of questions for me. I thought I would share just a couple. If you have answers to any of 
+these questions, or are interested in pursusing these ideas further I would love to hear from you!
 
 1. Can we do a multi-scale DDPM model, which progressively factorises out latent dimensions by having a faster
 forward process for certain subsets? For example, similar to the multi-scale architecture in RealNVP [[14]](#citation-14).
@@ -437,20 +459,35 @@ forward process for certain subsets? For example, similar to the multi-scale arc
   - b) learn regions of the latent space that correspond to certain known attributes [[15]](#citation-15)
 3. Can we use more flexible distributions for the forward process? For example, it was noted in [[4]](#citation-4) that 
 sampling $$ q(x_t|x_0) $$ requires solving "Kolmogorov’s forward equation" for the chosen
-process. However, perhaps for some flexible $$ q_{\phi}(x_t|x_{t-1}) $$ we could also sample from a (jointly learned) 
+process. However, perhaps for some flexible $$ q_{\phi}(x_t|x_{t-1}) $$ we could sample from a (jointly learned) 
 approximation $$ q_{\phi}(x_t|x_0) $$ ? 
 
 As another way to state 3., perhaps there is some middle ground between diffusion models and VAE. For example,
-we could retain the DDPM property of training each layer independently with shared parameters, but also reintroduce 
-the learned inference models that are distinct to VAEs. I don't feel qualified to say whether or 
-not this is a good idea, however I hope that I will have time to test it out.
+we could retain the DDPM property of sharing parameters between each generative layer, and training them independently,
+while also utilising a learned inference model.
 
-### Conclusion
+### <a name="conclusion"></a>Conclusion
 
 If you've made it this far, I hope that you have found these notes helpful! There is so much more that can
 be said about diffusion models, and in fact I still have a great deal to learn myself. For example, I have not even
 touched on the connection to score-based models or SDEs. However, there is a great blog by [Yang Song] that goes into
-detail about these connections. I would highly recommend it to those interested in learning more.
+detail about these connections.
+
+A lot of the derivations I have presented can be found in the original papers, and I encourage you to go through them
+yourself! I hope that by expanding on them step-by-step I have made them a bit easier to follow along with and get some intuition. 
+If you have any questions, or just want to discuss diffusion models further, please feel free to reach out by email or 
+on [twitter]. Also feel free to check out the corresponding [code].
+
+### <a name="further-reading"></a>Further Reading
+
+For those interested in learning more about diffusion models, and generative modelling more broadly, I wanted to share a few select
+resources that I have bookmarked:
+
+- [Yang Song's Blog](https://yang-song.github.io/blog/2021/score/) - For score-based models and the connection to DDPM
+- [Durk Kingma's Thesis](https://www.dropbox.com/s/v6ua3d9yt44vgb3/cover_and_thesis.pdf) - The best introduction to VAEs, as well as many extensions.
+- [Eric Jang's Blog](https://evjang.com/) - Intermediate and advanced topics in generative models. Flows, discrete latent variable models etc.
+- [Jakub Tomczak's Blog](https://jmtomczak.github.io/blog/) - Tutorials on many fundamentals in Deep Generative Modelling, with corresponding notebooks
+
 
 ### References
 
@@ -572,6 +609,14 @@ detail about these connections. I would highly recommend it to those interested 
   title="Latent Constraints: Learning to Generate Conditionally from Unconditional Generative Models"
   year="2017"
   link="https://arxiv.org/abs/1711.05772v2"
+%}
+
+{% include citation.html
+  no="16"
+  authors="Sang-gil Lee, Heeseung Kim, Chaehun Shin, Xu Tan, Chang Liu, Qi Meng, Tao Qin, Wei Chen, Sungroh Yoon, Tie-Yan Liu"
+  title="PriorGrad: Improving Conditional Denoising Diffusion Models with Data-Driven Adaptive Prior"
+  year="2021"
+  link="https://arxiv.org/abs/2106.06406v1"
 %}
 
 
