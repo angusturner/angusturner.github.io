@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Diffusion Probabilistic Models - Part I"
+title:  "From VAEs to Diffusion Models"
 date:   2021-06-29
 categories: generative_models
 comments: false
@@ -15,8 +15,8 @@ $$ \require{cancel} $$
 
 Recently I have been studying a class of generative models known as diffusion probabilistic models. These models were proposed by Sohl-Dickstein 
 et al. in 2015 [[1]](#citation-1), however they first caught my attention last year when Ho et al. released 
-"Denoising Diffusion Probabilistic Models" [[2]](#citation-2). Building on the earlier work of Sohl-Dickstein et al., 
-Ho et al. showed that a model trained with a stable variational objective could match or surpass GANs on image generation.
+"Denoising Diffusion Probabilistic Models" [[2]](#citation-2). Building on [[1]](#citation-1), Ho et al. showed that a model 
+trained with a stable variational objective could match or surpass GANs on image generation.
 
 Since the release of DDPM there has been a wave of renewed interest in diffusion models. New works have extended their success to the domain
 of audio modelling [[8]](#citation-8), text-to-speech [[9]]((#citation-9)), and multivariate time-series forecasting [[10]](#citation-10). Furthermore, 
@@ -25,20 +25,19 @@ were recently unified under the framework of stochastic differential equations [
 
 As a generative model, diffusion models have a number of unique and interesting properties. For example, trained models are able to
 perform inpainting [[1]](#citation-1) and zero-shot denoising [[8]](#citation-8) without being explicitly designed for these tasks. Furthermore,
-the variational bound used in DDPM highlights further connections to variational autoencoders and neural compression (Ho et al ICLR).
+the variational bound used in DDPM highlights further connections to variational autoencoders and neural compression.
 
 In this blog I want to explore diffusion models as they are presented in Sohl-Dickstein et al. [[1]](#citation-1), and Ho et al. [[2]](#citation-2).
-When I was working through these derivations, I found it useful to conceptualise these models in terms of their relationship to VAEs [[3]](#citation-3). This is 
-the perspective I will develop in this blog, working up from a simple VAE derivation, through to hierarchical extensions, and finally the 
-generative markov chain that is presented in DDPM.
+When I was working through these derivations, I found it useful to conceptualise these models in terms of their relationship to VAEs [[3]](#citation-3). 
+For this reason, I want to work up from a simple VAE derivation, through to hierarchical extensions, and finally the deep generative model
+presented in [[1]](#citation-1) and [[2]](#citation-2). I will conclude with some thoughts on the relationship between the two models,
+and some possible ideas for further research.
 
-I have also released a PyTorch implementation of my code...
-...
-
+I have also released a PyTorch implementation of my [code].
 
 ### Variational Autoencoders
 
-I want to begin with a quick refresher of variational autoencoders. If this is all feels familiar to you, feel free to skip ahead!
+I want to begin with a quick refresher of variational autoencoders [[3]](#citation-3). If this is all feels familiar to you, feel free to skip ahead!
 
 Consider the following generative model,
 
@@ -339,18 +338,13 @@ $$
 $$
 
 At this point we have a considerable mess of algebraic terms, however it simplifies down
-quite nicely. We can make use of the following facts:
-
-$$
-  \bar{\alpha}_t = \bar{\alpha}_{t-1} \alpha_t\\
-  \beta_t = 1 - \alpha_t
-$$
-
-The coefficient of $$ x_t $$ can be simplified, by multiplying the top and bottom by $$ \sqrt{\alpha_t} $$:
+quite nicely. Recall the fact that $$ \bar{\alpha}_t = \bar{\alpha}_{t-1} \alpha_t $$, and 
+$$ \beta_t = 1 - \alpha_t $$. We can simplify the coefficient of $$ x_t $$ by multiplying the top 
+and bottom by $$ \sqrt{\alpha_t} $$:
 
 $$
   = \frac{1}{\sqrt{\alpha_t}} \cdot \frac{\beta_t + \alpha_t(1 - \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t}\\
-  = \frac{1}{\sqrt{\alpha_t}} \cdot \frac{1 - \alpha_t + \alpha_t - \alpha_t \bar{\alpha}_{t-1})}{1 - \bar{\alpha}_t}\\
+  = \frac{1}{\sqrt{\alpha_t}} \cdot \frac{1 - \alpha_t + \alpha_t - \alpha_t \bar{\alpha}_{t-1}}{1 - \bar{\alpha}_t}\\
   = \frac{1}{\sqrt{\alpha_t}}
 $$
 
@@ -407,46 +401,56 @@ $$
 
 ### DDPM Interpretation
 
-On its own the DDPM derivation can seem a bit daunting. Equation (10) corresponds to a 
-single layer of the variational bound, and we can optimise it to train a DDPM model. 
-In summary:
+On its own the DDPM derivation can seem a bit daunting. Let's summarise:
 
-- We sample a data point $$ x_0 \sim p(x) $$, a random timestep $$ t $$ and some random 
-noise $$ \epsilon \sim \mathcal{N}(0, U) $$ 
+- The training objective in Equation (10) corresponds to a single layer of the variational bound. 
+- We sample a data point $$ x_0 \sim p(x) $$, a random timestep $$ t $$ and some noise $$ \epsilon \sim \mathcal{N}(0, I) $$ 
 - Based on the properties of the forward process, we can compute $$ x_t(x_0, \epsilon) $$,
 which represents a sample from $$ q(x_t|x_0) $$.
 - The forward process posterior $$ q(x_{t-1}|x_t,x_0) $$ has a closed-form distribution,
-which we compute based on knowing $$ x_0 $$ and our sample $$ x_t $$.
-- We want to match to minimise the KL divergence between the generative layer $$ p_{\theta}(x_{t-1}|x_t) $$
-and the forward process posterior.
-- Based on an analysis of the KL divergence, the variational bound reduces to a denoising objective.
+which we compute based on knowing $$ x_0 $$ and $$ x_t $$.
+- We want to minimise the KL divergence between each generative layer $$ p_{\theta}(x_{t-1}|x_t) $$
+and the corresponding forward process posterior.
+- By analysing the bound we see that minimising this divergence is equivalent to predicting
+the noise $$ \epsilon $$ that is required to invert the forward process.
 
-In short, we can explain the denoising objective as follows:
-- Each step in the forward process $$ x_t $$ is given by a stochastic function of the previous step $$ x_{t-1} $$
-- Given a sample $$ x_t $$ we want to predict the noise $$ \epsilon $$ that will allow us to recover $$ x_{t-1} $$.
+### DDPM as a kind of VAE
 
-As a final note, Ho et. al note that
+Okay, so while it technically optimises a variational bound, the DDPM model looks quite different
+from the original VAE presented by Kingma. Some of you are probably thinking: "Is it really
+fair to claim this is a 'kind of VAE'"? 
 
-### Final Thoughts
+And you would have a fair point. I mean, DDPM has no learnable parameters for the inference model.
+And it doesn't really resemble an autoencoder. However, I do think it is valuable to think about the
+connections for a few reasons. First, VAEs have been studied extensively, whereas DDPM seems 
+relatively underexplored. It is possible that insights from the VAE literature might
+be translatable to DDPM and vice versa.
 
+Furthermore, thinking about how DDPM fits within the current taxonomy of generative models
+has left me with a lot of questions. Perhaps some of these already have answers in the literature,
+and others could be a topic for future exploration.
 
+1. Can we do a multi-scale DDPM model, which progressively factorises out latent dimensions by having a faster
+forward process for certain subsets? For example, similar to the multi-scale architecture in RealNVP [[14]](#citation-14).
+2. Can we fit a diffusion model in the latent space of an autoencoder, as a means to:
+  - a) sample from a deterministic autoencoder, as was done with GMMs in [[13]](#citation-13).
+  - b) learn regions of the latent space that correspond to certain known attributes [[15]](#citation-15)
+3. Can we use more flexible distributions for the forward process? For example, it was noted in [[4]](#citation-4) that 
+sampling $$ q(x_t|x_0) $$ requires solving "Kolmogorov’s forward equation" for the chosen
+process. However, perhaps for some flexible $$ q_{\phi}(x_t|x_{t-1}) $$ we could also sample from a (jointly learned) 
+approximation $$ q_{\phi}(x_t|x_0) $$ ? 
 
-<!-- 
-DDPM is specific realisation of a hierarchical VAE, with the following properties:
-- The generative and inference pathways are both factorised as markov chains.
-- The latent dimensionality is constrained to match the data dimensionality.
-- The inference pathway has no learned parameters; the form of each layer is wholly determined by its index `t`.
-- Each generative layer shares parameters.
-- Expressivity comes from defining a chain with many layers (or "timesteps"). -->
+As another way to state 3., perhaps there is some middle ground between diffusion models and VAE. For example,
+we could retain the DDPM property of training each layer independently with shared parameters, but also reintroduce 
+the learned inference models that are distinct to VAEs. I don't feel qualified to say whether or 
+not this is a good idea, however I hope that I will have time to test it out.
 
-<!-- 
-More specfically, DDPM defines the inference model as a diffusion process. Beginning with a data point
-$$ x_0 \sim p(x) $$, each step of the inference pathway ("forward process") adds noise to the previous layer. The form of 
-this process is designed so that the latent distribution $$ p(x_T) $$ converges to a standard gaussian.
-To generate data we sample $$ x_T \sim \mathcal{N}(0, I) $$ and transform it through the generative pathway 
-("reverse process") to recover a sample from $$ x_0 \sim p(x) $$. -->
+### Conclusion
 
-
+If you've made it this far, I hope that you have found these notes helpful! There is so much more that can
+be said about diffusion models, and in fact I still have a great deal to learn myself. For example, I have not even
+touched on the connection to score-based models or SDEs. However, there is a great blog by [Yang Song] that goes into
+detail about these connections. I would highly recommend it to those interested in learning more.
 
 ### References
 
@@ -546,15 +550,38 @@ To generate data we sample $$ x_T \sim \mathcal{N}(0, I) $$ and transform it thr
   link="https://arxiv.org/abs/1706.03762v5"
 %}
 
+{% include citation.html
+  no="13"
+  authors="Partha Ghosh, Mehdi S. M. Sajjadi, Antonio Vergari, Michael Black"
+  title="From Variational to Deterministic Autoencoders"
+  year="2020"
+  link="https://arxiv.org/abs/1903.12436v4"
+%}
+
+{% include citation.html
+  no="14"
+  authors="Laurent Dinh, Jascha Sohl-Dickstein, Samy Bengio"
+  title="Density estimation using Real NVP"
+  year="2017"
+  link="https://arxiv.org/abs/1605.08803v3"
+%}
+
+{% include citation.html
+  no="15"
+  authors="Jesse Engel, Matthew Hoffman, Adam Roberts"
+  title="Latent Constraints: Learning to Generate Conditionally from Unconditional Generative Models"
+  year="2017"
+  link="https://arxiv.org/abs/1711.05772v2"
+%}
+
 
 {% if page.comments %}
 {% include disqus.html %}
 {% endif %}
 
 [pytorch]: https://pytorch.org
-[kmeans]: https://en.wikipedia.org/wiki/K-means_clustering
-[github]: https://github.com/angusturner/generative_models/
-[popgun]: http://popgun.ai/
-[variational autoencoders]: https://arxiv.org/abs/1312.6114
+[github]: https://github.com/angusturner/
+[code]: https://github.com/angusturner/diffuse
 [twitter]: https://twitter.com/AngusTurner9
 [previous post]: https://angusturner.github.io/generative_models/2017/11/03/pytorch-gaussian-mixture-model.html
+[Yang Song]: https://yang-song.github.io/blog/2021/score/
