@@ -436,24 +436,20 @@ $$ q(x_T|x_0) $$ is a standard gaussian by construction. This is typically not t
 - In DDPM, each generative layer shares the same neural network parameters. This is not typical for VAEs,
 however it should be possible in theory (I am not sure if it has been explored).
 
-I think it is useful to think about the connections to VAEs for a few reasons. Firstly, it helps to
-situate DDPM within the expanding taxonomy of deep generative models. VAEs are a ubiquitous model nowadays, 
-with a wealth of resources explaining how they work and how to implement them. Approaching DDPM from the angle of the
-VAE was helpful for developing my own intuition, as I hope it is for those reading.
-
-Furthermore, it is intersting to consider how this overlap might inspire future research directions. There have been countless 
-proposed variations and improvements to the VAE, including all kinds of flexible posterior and prior distributions, 
-decoders, constrained optimisation techniques, connections to information theory and compression etc. It is possible that some
-ideas from the VAE literature could be translatable to DDPM and vice versa. Perhaps in the future we will see some 
-interesting hybrid models combining the strengths of the two techniques.
+I think it is interesting to think about how the overlap between VAE and DDPM might inspire
+future research directions. For example, there have been countless proposed variations and improvements 
+to the VAE, including all kinds of flexible posterior and prior distributions [[7]](#citation-7)[[17]](#citation-17), decoders [[18]](#citation-18), constrained optimisation 
+techniques [[20]](#citation-20), and connections to information theory and compression [[19]](#citation-19). Perhaps some of these 
+insights from the VAE literature could be translatable to DDPM (and vice versa).
 
 ### <a name="open-questions"></a>Open Questions
 
-Thinking about DDPM has raised a lot of questions for me. I thought I would share just a couple. If you have answers to any of 
-these questions, or are interested in pursusing these ideas further I would love to hear from you!
+Studying DDPM has raised a lot of questions for me. I thought I would share just a couple, in case they are of any interest
+to others! If you have answers to any of these questions, or are interested in pursusing these ideas further 
+I would love to hear from you!
 
-1. Can we do a multi-scale DDPM model, which progressively factorises out latent dimensions by having a faster
-forward process for certain subsets? For example, similar to the multi-scale architecture in RealNVP [[14]](#citation-14).
+1. Can we do a multi-scale DDPM model, which progressively factorises out latent dimensions,
+similar to the multi-scale architecture in RealNVP [[14]](#citation-14)? Perhaps the forward process could go at different rates for different latent subsets.
 2. Can we fit a diffusion model in the latent space of an autoencoder, as a means to:
   - a) sample from a deterministic autoencoder, as was done with GMMs in [[13]](#citation-13).
   - b) learn regions of the latent space that correspond to certain known attributes [[15]](#citation-15)
@@ -617,6 +613,38 @@ resources that I have bookmarked:
   title="PriorGrad: Improving Conditional Denoising Diffusion Models with Data-Driven Adaptive Prior"
   year="2021"
   link="https://arxiv.org/abs/2106.06406v1"
+%}
+
+{% include citation.html
+  no="17"
+  authors="Danilo Jimenez Rezende, Shakir Mohamed"
+  title="Variational Inference with Normalizing Flows"
+  year="2016"
+  link="https://arxiv.org/abs/1505.05770v6"
+%}
+
+{% include citation.html
+  no="18"
+  authors="Aaron van den Oord, Nal Kalchbrenner, Oriol Vinyals, Lasse Espeholt, Alex Graves, Koray Kavukcuoglu"
+  title="Conditional Image Generation with PixelCNN Decoders"
+  year="2016"
+  link="https://arxiv.org/abs/1606.05328"
+%}
+
+{% include citation.html
+  no="19"
+  authors="Alexander A. Alemi, Ben Poole, Ian Fischer, Joshua V. Dillon, Rif A. Saurous, Kevin Murphy"
+  title="Fixing a Broken ELBO"
+  year="2018"
+  link="https://arxiv.org/abs/1711.00464v3"
+%}
+
+{% include citation.html
+  no="20"
+  authors="Danilo Jimenez Rezende, Fabio Viola"
+  title="Taming VAEs"
+  year="2018"
+  link="https://arxiv.org/abs/1810.00597v1"
 %}
 
 
