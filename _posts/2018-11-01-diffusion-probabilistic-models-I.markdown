@@ -479,6 +479,7 @@ on [twitter]. Also feel free to check out the corresponding [code].
 For those interested in learning more about diffusion models, and generative modelling more broadly, I wanted to share a few select
 resources that I have bookmarked:
 
+- [Lilian Weng's Blog](https://lilianweng.github.io/lil-log/2021/07/11/diffusion-models.html) - A concurrent post about diffusion models. Includes more information on the score modelling connection, as well as fast sampling and conditional generation.
 - [Yang Song's Blog](https://yang-song.github.io/blog/2021/score/) - For score-based models and the connection to DDPM
 - [Durk Kingma's Thesis](https://www.dropbox.com/s/v6ua3d9yt44vgb3/cover_and_thesis.pdf) - The best introduction to VAEs, as well as many extensions.
 - [Eric Jang's Blog](https://evjang.com/) - Intermediate and advanced topics in generative models. Flows, discrete latent variable models etc.
