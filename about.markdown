@@ -17,15 +17,7 @@ permalink: /about/
 
 ### Profile
 
-<img class="profile" src='{{ "/assets/images/profile_pic.png" }}'>
-
-I am a machine learning engineer at [Splash], where I have been 
-working on models of audio and symbolic music since 2017.
-
-I have a background in web development, and completed my undergraduate degree in computer science at Queensland University of Technology.
-
-I am super passionate about generative modelling, and related topics such as variational inference and neural compression. This blog is a
-place for me to share some of my learnings, and link to other code and projects that I am proud of.
+{% include about_header.html %}
 
 ### Projects
 
