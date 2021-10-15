@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "From VAEs to Diffusion Models"
+title:  "Diffusion Models as a kind of VAE"
 date:   2021-06-29
 categories: generative_models
 comments: false
@@ -45,20 +45,20 @@ $$
   p_{\theta}(x) = \int_{z}p_{\theta}(x|z)p_{\theta}(z)
 $$  
 
-In general, the form of the prior $$ p_{\theta}(z) $$ and likelihood $$ p_{\theta}(x|z) $$ will depend on the data we are trying to model.
-For simplicity we often set $$ p(z) := \mathcal{N}(0, I) $$. If $$ x $$ is a continuous variable, we might choose $$ p_{\theta}(x|z) $$
-as a factorised gaussian distribution, with the mean $$ \mu_{\theta}(z) $$ and variance $$ \sigma_{\theta}(z) $$ parameterised by a neural
-network.
+Where $$ x $$ is the data we would like to model and $$ z $$ is a latent variable. In general, the form of the prior $$ p_{\theta}(z) $$
+and observation model $$ p_{\theta}(x|z) $$ will depend on the data we are trying to model. For now lets assume $$ p(z) := \mathcal{N}(0, I) $$ 
+and $$ p_{\theta}(x|z) $$ as a factorised gaussian, whose parameters $$ \mu_{\theta}(z) $$ and $$ \sigma_{\theta}(z) $$ we will predict with a
+neural network.
 
-Typically the true distribution $$ p(x) $$ is unknown, and we would like to fit the model to some empirically observed subset $$ \hat{p}(x) $$.
-We could estimate the model parameters $$ \theta $$ with MLE as follows,
+Of course, for most problems we do not have access to the true distribution $$ p(x) $$, and must make do with some
+empirically observed subset $$ \hat{p}(x) $$. Naively, we could try to estimate the model parameters $$ \theta $$ with MLE as follows,
+using monte-carlo sampling to approximate the integral over $$ z $$.
 
 $$
   \theta^{*} = \underset{\theta}{\text{argmax}} \text{ } \mathbb{E}_{x \sim \hat{p}(x) \text{, } z \sim p(z)}  \left[ \text{log } p_{\theta}(x|z; \theta) \right]
 $$
 
-Since we cannot compute this expectation in closed form we can resort to monte-carlo sampling, evaluating the expression for random 
-samples $$ z \sim p(z) $$. However, it is well known that this approach does not scale to high dimensions of $$ z $$ [[5]](#citation-5).
+However, it is well known that this approach does not scale to high dimensions of $$ z $$ [[5]](#citation-5).
 Intuitively, the likelihood of a random latent code $$ z \sim p(z) $$ corresponding to any particular data point is extremely small
 (especially in high dimensions!).
 
@@ -92,37 +92,37 @@ see the section on [further reading](#further-reading).
 
 ### <a name="hierarchical-variational-autoencoders"></a>Hierarchical Variational Autoencoders
 
-Having defined a VAE with a single stochastic layer, it is trivial to derive multi-layer extensions.
+Having defined a VAE with a single stochastic layer, it is straightforward to derive hierarchical extensions.
 Consider a VAE with two latent variables $$ z_1 $$ and $$ z_2 $$. We begin by considering the joint 
 distribution $$ p(x, z_1, z_2) $$ and marginalising out the latent variables:  
 
 $$
-  p(x) = \int_{z_1} \int_{z_2} p(x, z_1, z_2) dz_1, dz_2
+  p_{\theta}(x) = \int_{z_1} \int_{z_2} p(x, z_1, z_2) dz_1, dz_2
 $$
 
-Once again, we can introduce a variational posterior as follows:
+We introduce a variational approximation to the true posterior,
 
 $$
-  p(x) = \int \int q(z_1, z_2|x) \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)}\\
-  p(x) = \mathbb{E}_{z_1 ,z_2 \sim q(z_1, z_2|x)} \left[ \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)} \right]
+  p(x) = \int \int q_{\phi}(z_1, z_2|x) \frac{p_{\theta}(x, z_1, z_2)}{q_{\phi}(z_1, z_2|x)}\\
+  p(x) = \mathbb{E}_{z_1 ,z_2 \sim q_{\phi}(z_1, z_2|x)} \left[ \frac{p_{\theta}(x, z_1, z_2)}{q_{\phi}(z_1, z_2|x)} \right]
 $$
 
 Taking the log and applying Jensen's rule:
 
 $$
-  \text{log } p(x) \geq \mathbb{E}_{z_1 ,z_2 \sim q(z_1, z_2|x)} \left[ \text{log } \frac{p(x, z_1, z_2)}{q(z_1, z_2|x)} \right]
+  \text{log } p(x) \geq \mathbb{E}_{z_1 ,z_2 \sim q_{\phi}(z_1, z_2|x)} \left[ \text{log } \frac{p_{\theta}(x, z_1, z_2)}{q_{\phi}(z_1, z_2|x)} \right]
 $$
 
 Notice that I have written these expressions in terms of the joint distributions 
-$$ p(x, z_1, z_2) $$ and $$ q(z_1, z_2|x) $$. I have done this to emphasise the fact that we are free
+$$ p_{\theta}(x, z_1, z_2) $$ and $$ q_{\phi}(z_1, z_2|x) $$. I have done this to emphasise the fact that we are free
 to factorise the inference and generative models as we see fit. In practice, some factorisations
-are more suitable than others (as shown in [[7]](#citation-7)). For now lets consider the factorisation in Figure 2.
+are more suitable than others (as shown in [[7]](#citation-7)). For now lets consider the model in Figure 2.
 
 __Figure 2 - A Hierarchical VAE__
 {: style="text-align: center;" }
 <img class="image" src='{{ "/assets/images/hierarchical-vae.png" }}'>
 
-Writing this out, we have the generative model,
+For the generative pathway we have,
 
 $$
   p(x,z_1,z_2) = p(x|z_1)p(z_1|z_2)p(z_2)
@@ -365,7 +365,7 @@ $$
 From (7), we observe that the loss is minimised when $$ \mu_{\theta} $$ predicts,
 
 $$
-  \frac{1}{\sqrt{\alpha}} \cdot 
+  \frac{1}{\sqrt{\alpha_t}} \cdot 
   \left( x_t(x_0, \epsilon) - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}_t}} \right)
 $$
 
@@ -445,7 +445,7 @@ insights from the VAE literature could be translatable to DDPM (and vice versa).
 ### <a name="open-questions"></a>Open Questions
 
 Studying DDPM has raised a lot of questions for me. I thought I would share just a couple, in case they are of any interest
-to others! If you have answers to any of these questions, or are interested in pursusing these ideas further 
+to others! If you have answers to any of these questions, or are interested in pursuing these ideas further 
 I would love to hear from you!
 
 1. Can we do a multi-scale DDPM model, which progressively factorises out latent dimensions,
