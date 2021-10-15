@@ -50,8 +50,8 @@ and observation model $$ p_{\theta}(x|z) $$ will depend on the data we are tryin
 and $$ p_{\theta}(x|z) $$ as a factorised gaussian, whose parameters $$ \mu_{\theta}(z) $$ and $$ \sigma_{\theta}(z) $$ we will predict with a
 neural network.
 
-Of course, for most problems we do not have access to the true distribution $$ p(x) $$, and must make do with some
-empirically observed subset $$ \hat{p}(x) $$. Naively, we could try to estimate the model parameters $$ \theta $$ with MLE as follows,
+Of course, for most problems we do not have access to the true distribution $$ p(x) $$, and would like to fit our model
+to some empirically observed subset $$ \hat{p}(x) $$. Naively, we could try to estimate the model parameters $$ \theta $$ with MLE,
 using monte-carlo sampling to approximate the integral over $$ z $$.
 
 $$
@@ -97,7 +97,7 @@ Consider a VAE with two latent variables $$ z_1 $$ and $$ z_2 $$. We begin by co
 distribution $$ p(x, z_1, z_2) $$ and marginalising out the latent variables:  
 
 $$
-  p_{\theta}(x) = \int_{z_1} \int_{z_2} p(x, z_1, z_2) dz_1, dz_2
+  p(x) = \int_{z_1} \int_{z_2} p_{\theta}(x, z_1, z_2) dz_1, dz_2
 $$
 
 We introduce a variational approximation to the true posterior,
@@ -414,10 +414,10 @@ and the corresponding forward process posterior.
 - By analysing the bound we see that minimising this divergence is equivalent to predicting
 the noise $$ \epsilon $$ that is required to invert the forward process.
 
-### <a name="ddpm-as-a-kind-of-vae"></a>DDPM as a kind of VAE
+### <a name="ddpm-as-a-kind-of-vae"></a>Is DDPM a kind of VAE?
 
 Okay, so while it technically optimises a variational bound, the DDPM model looks quite different
-from the original VAE presented by Kingma. Some of you are probably thinking: _Is it really
+from the VAE presented by Kingma. Some of you are probably thinking: _Is it really
 fair to claim this is a kind of VAE?_ 
 
 I suspect this this is largely a matter of semantics. However, we can say that DDPM is similar to VAE in the following
@@ -431,7 +431,7 @@ of latent representations.
 We also have the following key differences:
 - The inference model or 'forward process' in DDPM has no learned parameters
 - The forward process in DDPM progressively destroys all information about the input, such that the final distribution
-$$ q(x_T|x_0) $$ is a standard gaussian by construction. This is typically not true with VAEs.
+$$ q(x_T|x_0) $$ is a standard gaussian by construction. This is typically not true with VAEs (we want `z` to contain some information about `x` !) 
 - In DDPM the dimensionality of each latent must match the data. In VAEs we can reduce dimensionality.
 - In DDPM, each generative layer shares the same neural network parameters. This is not typical for VAEs,
 however it should be possible in theory (I am not sure if it has been explored).
@@ -445,8 +445,7 @@ insights from the VAE literature could be translatable to DDPM (and vice versa).
 ### <a name="open-questions"></a>Open Questions
 
 Studying DDPM has raised a lot of questions for me. I thought I would share just a couple, in case they are of any interest
-to others! If you have answers to any of these questions, or are interested in pursuing these ideas further 
-I would love to hear from you!
+to others!
 
 1. Can we do a multi-scale DDPM model, which progressively factorises out latent dimensions,
 similar to the multi-scale architecture in RealNVP [[14]](#citation-14)? Perhaps the forward process could go at different rates for different latent subsets.
