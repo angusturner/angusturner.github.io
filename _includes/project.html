@@ -1,0 +1,43 @@
+<style>
+    .project {
+        display: flex;
+        justify-content: flex-start;
+        padding-bottom: 15px;
+    }
+    .project-number {
+        min-width: 25px;
+        padding-right: 10px;
+        height: 100%;
+        text-align: right;
+        font-weight: bold;
+    }
+    .project-info {
+        display: inline-flex;
+        flex-flow: column wrap;
+    }
+    .project-title {
+        width: 100%;
+        font-weight: bold;
+    }
+    .project-meta {
+        width: 100%;
+    }
+    .project-desc {
+        width: 100%;
+    }
+    a.project-link {
+        color: inherit;
+    }
+</style>
+
+<div class="project" id="project-{{ include.no }}">
+    <div class="project-number"> &#8226; </div>
+    <div class="project-info">
+        <div class="project-title">
+            <a href="{{ include.link }}" class="project-link">{{ include.title }}</a>
+        </div>
+        <div class="project-meta">
+            <span class="project-desc">{{ include.desc }}</span>
+        </div>
+    </div>
+</div>
