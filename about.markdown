@@ -1,6 +1,6 @@
 ---
 layout: page
-title: About
+title: About Me
 permalink: /about/
 ---
 
@@ -15,7 +15,7 @@ permalink: /about/
     }
 </style>
 
-### About Me
+### Profile
 
 <img class="profile" src='{{ "/assets/images/profile_pic.png" }}'>
 
@@ -48,6 +48,11 @@ place for me to share some of my learnings, and link to other code and projects 
     desc="An exercise in learning rust. Implements a few algorithms from Andrew Ng's machine learning course. (Not maintained)."
     title="Rust Machine Learning Algorithms"
     link="https://github.com/angusturner/rustml"
+%}
+{% include project.html
+    desc="Another exercise in learning rust. Implements breadth-first search, to solve a 2x2 Rubiks cube."
+    title="2x2 Rubik's Cube Solver"
+    link="rubiks-2x2-solver"
 %}
 
 
