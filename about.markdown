@@ -44,7 +44,7 @@ permalink: /about/
 {% include project.html
     desc="Another exercise in learning rust. Implements breadth-first search, to solve a 2x2 Rubiks cube."
     title="2x2 Rubik's Cube Solver"
-    link="rubiks-2x2-solver"
+    link="https://github.com/angusturner/rubiks-2x2-solver"
 %}
 
 
