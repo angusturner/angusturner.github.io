@@ -141,13 +141,8 @@ $$
   \left[ \text{log }p(x|z_1) - \text{log }q(z_1|x) + \text{log }p(z_1|z_2) - \text{log }q(z_2 | z_1) + \text{log }p(z_2)  \right]\\
 $$
 
-This can be alternatively written as a "reconstruction term", and the KL divergence between each inference layer and its corresponding prior:
-
-$$
-= \mathbb{E}_{q(z_1|z_2)} \left[ \text{log }p(x|z_1) \right] - D_{KL} \left( q(z_1|x) \mathrel{\Vert} p(z_1|x) \right)
-  - D_{KL} \left( q(z_2|z_1) \mathrel{\Vert} p(z_2) \right)
-$$
-
+This leftmost term is the "reconstruction term". The remaining terms minimise the expected KL divergence between the prior
+and posterior distributions at each level of the latent hierarchy.
 
 ### <a name="diffusion-probabilistic-models"></a>Diffusion Probabilistic Models
 
